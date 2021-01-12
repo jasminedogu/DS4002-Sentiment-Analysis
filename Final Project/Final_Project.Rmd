@@ -12,33 +12,33 @@ output:
 ---
 
 
-
-```{r}
-#Import packages 
-
-library(tidyverse)
-library(tidytext)
-library(textdata)
-install.packages("tidyselect")
-library(tidyselect)
-library(stringr)
-library(DT)
-install.packages("topicmodels")
-library(tm)
-library(plotly)
-install.packages("LDAvis")
-library(LDAvis)
-library(topicmodels)
-
-```
-
-
-
 #Cleaning the Data 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, error=FALSE, cache = TRUE)
+#Import packages 
+library(tidyverse)
+library(tidytext)
+library(textdata)
+#install.packages("tidyselect")
+library(tidyselect)
+library(stringr)
+library(DT)
+#install.packages("topicmodels")
+library(tm)
+library(plotly)
+#install.packages("LDAvis")
+library(LDAvis)
+library(qdap)
+library(topicmodels)
 library(ggplot2)
+library(googleLanguageR)
+library(cld2)
+library(wordnet)
+library(qdapDictionaries)
+library(datasets)
 library(dplyr)
+#install.packages("reticulate")
+library(reticulate)
 library(tidytext)
 set.seed(03092000)
 ```
@@ -57,12 +57,15 @@ We also wanted to do some background research regarding spam text messages to ge
 df <- read.csv("/cloud/project/Datasets/Text_Message_Classification.csv")
 head(df,5)
 ```
-
 ```{r}
+library(wordnet)
+library(textstem)
+library(qdapDictionaries)
+library(qdap)
 #Removing punctuation
-
 df2 = df %>% 
-  select(Message)
+  select(Message) %>%
+  lemmatize_words(df$Messages)
 
 df2$Message <- (str_replace_all(df2$Message, "[[:punct:]]", " "))
 head(df2)
@@ -72,23 +75,30 @@ df_xx = df2 %>%
 head(df_xx)
 
 df_xx <- df_xx %>% 
-  anti_join(stop_words)
-
+  anti_join(stop_words)%>%
+  replace_contraction()
+  
 df_xx <- filter(df_xx, !str_detect(word, "na"))
-
 ```
 
 ```{r}
-
 head(df_xx %>%
   count(df_xx$word, sort = TRUE), 20)
-
 df_xx_count <- df_xx %>%
   count(word, sort=TRUE)
-
-df$Category <- ifelse(df$Category=='ham',0,1)
-head(df,5)
+#df$Category <- ifelse(df$Category=='ham',0,1)
+head(df_xx,5)
 ```
+
+
+
+
+
+#remove stop words, perform stemming/maybe lemmatization, handle aprosthropes, handle contractions, deal with numbers (?), spell correction if needed, language, SMOTE, account for text
+
+
+
+
 
 ```{r}
 print(table(df$Category))
@@ -100,12 +110,14 @@ print(prop.table(table(df$Category)))
 At 13.41%, this is clearly a skewed data set, aka rare event.
 
 ```{r, message = FALSE, warnings = FALSE}
+#creating pie chart for base rate
 count.data <- data.frame(
   class = c("Ham", "Spam"),
   n = c(4825, 747),
   prop = c(86.59, 13.41)
 )
 mycols <- c("#474d84","#8d84ac")
+
 # Add label position
 count.data <- count.data %>%
   arrange(desc(class)) %>%
