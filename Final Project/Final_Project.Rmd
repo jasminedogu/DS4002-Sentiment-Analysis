@@ -1,6 +1,6 @@
 ---
 title: "Project-One-Group-3"
-author: "Jasmine Dogu, Brian Wimmer, Christos Chen - Group 3"
+author: "Jasmine Dogu, Christos Chen, Brian Wimmer - Group 3"
 date: "01/11/2021"
 output:
   html_document:
@@ -10,6 +10,7 @@ output:
   pdf_document:
     toc: yes
 ---
+
 
 
 ```{r}
@@ -34,6 +35,22 @@ library(topicmodels)
 
 
 #Cleaning the Data 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, error=FALSE, cache = TRUE)
+library(ggplot2)
+library(dplyr)
+set.seed(03092000)
+```
+
+#About the Dataset
+We will be using the “Spam Text Message Classification” dataset from Kaggle. It can be found [here](https://www.kaggle.com/team-ai/spam-text-message-classification).
+
+The data consists of 5157 observations. Each observation is labeled “spam” or “ham”, with a base rate of 13% for spam. For reference, “ham” is a normal and non-spam text message. Each observation includes the message containing text.
+
+#Background Research
+We also wanted to do some background research regarding spam text messages to get an idea of how big a problem it is. We were extremely surprised to find that it was even more prominent than we expected. We discovered that around 3% of all text messages are spam related and that nearly 43 million Americans lost $10.5 billion to cellular text/call spams (in 2018). We also found information regarding steps that wireless providers utilize to minimize spam messages, including machine learning and artificial intelligence.
+
+
 ```{r}
 #reading in the dataset 
 df <- read.csv("/cloud/project/Datasets/Text_Message_Classification.csv")
@@ -68,6 +85,45 @@ head(df_xx %>%
 df_xx_count <- df_xx %>%
   count(word, sort=TRUE)
 
+df$Category <- ifelse(df$Category=='ham',0,1)
+head(df,5)
+```
+
+```{r}
+print(table(df$Category))
+```
+
+```{r}
+print(prop.table(table(df$Category)))
+```
+At 13.41%, this is clearly a skewed data set, aka rare event.
+
+```{r, message = FALSE, warnings = FALSE}
+count.data <- data.frame(
+  class = c("Ham", "Spam"),
+  n = c(4825, 747),
+  prop = c(86.59, 13.41)
+)
+mycols <- c("#474d84","#8d84ac")
+# Add label position
+count.data <- count.data %>%
+  arrange(desc(class)) %>%
+  mutate(lab.ypos = cumsum(prop) - 0.5*prop)
+count.data
+br<- ggplot(count.data, aes(x = 2, y = prop, fill = class)) +
+  geom_bar(stat = "identity", color = "white") +
+  coord_polar(theta = "y", start = 0)+
+  geom_text(aes(y = lab.ypos, label = prop), color = "white")+
+  scale_fill_manual(values = mycols) +
+  theme_void()+
+  xlim(0.5, 2.5)
+br
+#ggsave(br,file="base_rate.png", bg = "transparent")
+```
+
+
+```{r}
+
 df_xx_count$word <- as.factor(df_xx_count$word) 
 str(df_xx_count)
 
@@ -85,7 +141,6 @@ tokenword_plot = ggplotly(ggplot(
 tokenword_plot
 
 df_xx <- tibble(df_xx)
-
 ```
 
 #Creating Unigrams and Bigrams 
@@ -163,4 +218,15 @@ AssociatedPress
 
 
 ```
+
+```{r}
+#function handles unbalanced classification problems using the SMOTE method
+#synthetic Minority Over Sampling Technique
+#library(smotefamily)
+
+#dat_plot = SMOTE(dat[,1:2],  # feature values
+#              as.numeric(dat[,3]),  # class labels
+#              K = 3, dup_size = 0)  # function parameters
+```
+
 
