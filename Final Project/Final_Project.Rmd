@@ -1,6 +1,6 @@
 ---
 title: "Project-One-Group-3"
-author: "Jasmine Dogu, Brian Wimmer, Christos Chen - Group 3"
+author: "Jasmine Dogu, Christos Chen, Brian Wimmer, - Group 3"
 date: "01/11/2021"
 output:
   html_document:
@@ -10,6 +10,11 @@ output:
   pdf_document:
     toc: yes
 ---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, error=FALSE, cache = TRUE)
+set.seed(03092000)
+```
+
 
 ```{r}
 #reading in the dataset 
@@ -18,9 +23,25 @@ head(df,5)
 ```
 
 ```{r}
+df$Category <- ifelse(df$Category=='ham',0,1)
+head(df,5)
+```
+
+```{r}
+print(table(df$Category))
+```
+```{r}
+print(prop.table(table(df$Category)))
+```
+At 13.41%, this is clearly a skewed data set, aka rare event.
+
+```{r}
 #function handles unbalanced classification problems using the SMOTE method
+#synthetic Minority Over Sampling Technique
+#library(smotefamily)
 
-
-
+#dat_plot = SMOTE(dat[,1:2],  # feature values
+#              as.numeric(dat[,3]),  # class labels
+#              K = 3, dup_size = 0)  # function parameters
 
 ```
