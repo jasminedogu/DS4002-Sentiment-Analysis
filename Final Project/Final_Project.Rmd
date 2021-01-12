@@ -1,0 +1,26 @@
+---
+title: "Project-One-Group-3"
+author: "Jasmine Dogu, Brian Wimmer, Christos Chen - Group 3"
+date: "01/11/2021"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    theme: paper
+  pdf_document:
+    toc: yes
+---
+
+```{r}
+#reading in the dataset 
+df <- read.csv("/cloud/project/Datasets/Text_Message_Classification.csv")
+head(df,5)
+```
+
+```{r}
+#function handles unbalanced classification problems using the SMOTE method
+
+
+
+
+```
