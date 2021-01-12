@@ -15,6 +15,7 @@ output:
 knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, error=FALSE, cache = TRUE)
 library(ggplot2)
 library(dplyr)
+library(tidytext)
 set.seed(03092000)
 ```
 
@@ -67,6 +68,31 @@ br<- ggplot(count.data, aes(x = 2, y = prop, fill = class)) +
 br
 #ggsave(br,file="base_rate.png", bg = "transparent")
 ```
+
+# Data Cleaning 
+
+```{r}
+#remove stop words, perform stemming/maybe lemmatization, handle aprosthropes, handle contractions, deal with numbers (?), spell correction if needed, language, SMOTE, account for text
+
+head(df)
+
+#View(stop_words)
+
+df <- df %>% 
+      mutate(Message = tolower(Message)) %>%
+     for (row in dataFrame) {
+       for (x in row ){
+         if(x == stop_words)
+         str_remove(df, x, "")
+       }
+     }
+
+df <- df %>% anti_join(stop_words) #tidytext package
+      
+
+```
+
+
 
 
 ```{r}
