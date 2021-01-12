@@ -18,6 +18,13 @@ library(dplyr)
 set.seed(03092000)
 ```
 
+#About the Dataset
+We will be using the “Spam Text Message Classification” dataset from Kaggle. It can be found [here](https://www.kaggle.com/team-ai/spam-text-message-classification).
+
+The data consists of 5157 observations. Each observation is labeled “spam” or “ham”, with a base rate of 13% for spam. For reference, “ham” is a normal and non-spam text message. Each observation includes the message containing text.
+
+#Background Research
+We also wanted to do some background research regarding spam text messages to get an idea of how big a problem it is. We were extremely surprised to find that it was even more prominent than we expected. We discovered that around 3% of all text messages are spam related and that nearly 43 million Americans lost $10.5 billion to cellular text/call spams (in 2018). We also found information regarding steps that wireless providers utilize to minimize spam messages, including machine learning and artificial intelligence.
 
 ```{r}
 #reading in the dataset 
