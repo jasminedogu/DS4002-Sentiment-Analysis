@@ -12,6 +12,8 @@ output:
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, error=FALSE, cache = TRUE)
+library(ggplot2)
+library(dplyr)
 set.seed(03092000)
 ```
 
@@ -34,6 +36,30 @@ print(table(df$Category))
 print(prop.table(table(df$Category)))
 ```
 At 13.41%, this is clearly a skewed data set, aka rare event.
+
+```{r, message = FALSE, warnings = FALSE}
+count.data <- data.frame(
+  class = c("Ham", "Spam"),
+  n = c(4825, 747),
+  prop = c(86.59, 13.41)
+)
+mycols <- c("#474d84","#8d84ac")
+# Add label position
+count.data <- count.data %>%
+  arrange(desc(class)) %>%
+  mutate(lab.ypos = cumsum(prop) - 0.5*prop)
+count.data
+br<- ggplot(count.data, aes(x = 2, y = prop, fill = class)) +
+  geom_bar(stat = "identity", color = "white") +
+  coord_polar(theta = "y", start = 0)+
+  geom_text(aes(y = lab.ypos, label = prop), color = "white")+
+  scale_fill_manual(values = mycols) +
+  theme_void()+
+  xlim(0.5, 2.5)
+br
+#ggsave(br,file="base_rate.png", bg = "transparent")
+```
+
 
 ```{r}
 #function handles unbalanced classification problems using the SMOTE method
