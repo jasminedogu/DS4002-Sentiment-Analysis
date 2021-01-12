@@ -11,6 +11,30 @@ output:
     toc: yes
 ---
 
+
+
+```{r}
+#Import packages 
+
+library(tidyverse)
+library(tidytext)
+library(textdata)
+install.packages("tidyselect")
+library(tidyselect)
+library(stringr)
+library(DT)
+install.packages("topicmodels")
+library(tm)
+library(plotly)
+install.packages("LDAvis")
+library(LDAvis)
+library(topicmodels)
+
+```
+
+
+
+#Cleaning the Data 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, error=FALSE, cache = TRUE)
 library(ggplot2)
@@ -27,6 +51,7 @@ The data consists of 5157 observations. Each observation is labeled “spam” o
 #Background Research
 We also wanted to do some background research regarding spam text messages to get an idea of how big a problem it is. We were extremely surprised to find that it was even more prominent than we expected. We discovered that around 3% of all text messages are spam related and that nearly 43 million Americans lost $10.5 billion to cellular text/call spams (in 2018). We also found information regarding steps that wireless providers utilize to minimize spam messages, including machine learning and artificial intelligence.
 
+
 ```{r}
 #reading in the dataset 
 df <- read.csv("/cloud/project/Datasets/Text_Message_Classification.csv")
@@ -34,6 +59,33 @@ head(df,5)
 ```
 
 ```{r}
+#Removing punctuation
+
+df2 = df %>% 
+  select(Message)
+
+df2$Message <- (str_replace_all(df2$Message, "[[:punct:]]", " "))
+head(df2)
+
+df_xx = df2 %>%
+  unnest_tokens(word, "Message")
+head(df_xx)
+
+df_xx <- df_xx %>% 
+  anti_join(stop_words)
+
+df_xx <- filter(df_xx, !str_detect(word, "na"))
+
+```
+
+```{r}
+
+head(df_xx %>%
+  count(df_xx$word, sort = TRUE), 20)
+
+df_xx_count <- df_xx %>%
+  count(word, sort=TRUE)
+
 df$Category <- ifelse(df$Category=='ham',0,1)
 head(df,5)
 ```
@@ -41,6 +93,7 @@ head(df,5)
 ```{r}
 print(table(df$Category))
 ```
+
 ```{r}
 print(prop.table(table(df$Category)))
 ```
@@ -96,6 +149,103 @@ df <- df %>% anti_join(stop_words) #tidytext package
 
 
 ```{r}
+
+df_xx_count$word <- as.factor(df_xx_count$word) 
+str(df_xx_count)
+
+tokenword_plot = ggplotly(ggplot(
+  data = head(df_xx_count, 30),
+  aes(x = fct_reorder(word,n),
+      y = n)
+  ) + 
+  geom_col() + 
+  coord_flip()+
+  theme_light()+
+  xlab("Token Words")+
+    ylab("Count")
+  )
+tokenword_plot
+
+df_xx <- tibble(df_xx)
+```
+
+#Creating Unigrams and Bigrams 
+```{r}
+#Bigrams 
+df_xx_ngrams_2 <- df2 %>%
+  unnest_tokens(word, Message, token = "ngrams", n=2)
+
+head(datatable(df_xx_ngrams_2), 20)
+
+#Trigrams
+df_xx_ngrams_3 <- df2 %>%
+  unnest_tokens(word, Message, token = "ngrams", n=3)
+
+head(datatable(df_xx_ngrams_3), 20)
+```
+
+
+```{r}
+id <- rownames(df)
+df_tf <- cbind(id=id, df)
+df_tf
+#------ Here, df = data_math_tf in Prof Wright's code 
+
+
+#Placing everything in one column and adding "other id" back in
+
+
+#Removing punctuation and NAs
+df_tf$Message <- (str_replace_all(df_tf$Message, "[[:punct:]]", " "))
+
+df_tf$Message <- (str_remove_all(df_tf$Message, "NA")) 
+df_tf
+
+#Counting of words, with ID
+
+word_count_id <- df_tf %>%
+  unnest_tokens(word, Message) %>%
+  count(id, word, sort = TRUE)
+
+head(word_count_id, 8)
+
+total_words_id <- word_count_id %>% 
+  group_by(id) %>% 
+  summarize(total = sum(n))
+
+head(total_words_id, 12)
+
+journal_words_id <- left_join(word_count_id, total_words_id)
+
+journal_words_id <- journal_words_id %>%
+  bind_tf_idf(word, id, n)
+
+datatable(journal_words_id)
+
+```
+
+
+
+
+
+# Exploratory Data Analysis
+
+
+# Sentiment Analysis 
+
+
+# Topic Modeling - Latent Dirichlet Allocation
+```{r}
+install.packages('topicmodels')
+library(topicmodels)
+
+data("AssociatedPress")
+AssociatedPress
+
+
+```
+
+```{r}
 #function handles unbalanced classification problems using the SMOTE method
 #synthetic Minority Over Sampling Technique
 #library(smotefamily)
@@ -103,5 +253,6 @@ df <- df %>% anti_join(stop_words) #tidytext package
 #dat_plot = SMOTE(dat[,1:2],  # feature values
 #              as.numeric(dat[,3]),  # class labels
 #              K = 3, dup_size = 0)  # function parameters
-
 ```
+
+
