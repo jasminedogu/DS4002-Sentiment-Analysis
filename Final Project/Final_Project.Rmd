@@ -22,6 +22,12 @@ library(textdata)
 #install.packages("tidyselect")
 library(tidyselect)
 library(stringr)
+library(caret)
+library(e1071)
+library(rpart)
+library(RTextTools)
+library(tm)
+library(DMwR)
 library(DT)
 #install.packages("topicmodels")
 library(tm)
@@ -39,7 +45,6 @@ library(datasets)
 library(dplyr)
 #install.packages("reticulate")
 library(reticulate)
-library(tidytext)
 set.seed(03092000)
 ```
 
@@ -62,10 +67,20 @@ library(wordnet)
 library(textstem)
 library(qdapDictionaries)
 library(qdap)
+
+#Datasets for later 
+df_spam <- filter(df, df$Category =="spam")
+df_ham <-filter(df, df$Category =="ham")
+
+
 #Removing punctuation
 df2 = df %>% 
-  select(Message) %>%
-  lemmatize_words(df$Messages)
+  select(Message) 
+
+df2 = as.vector(df2) %>% 
+lemmatize_words()
+
+head(df2)
 
 df2$Message <- (str_replace_all(df2$Message, "[[:punct:]]", " "))
 head(df2)
@@ -75,31 +90,166 @@ df_xx = df2 %>%
 head(df_xx)
 
 df_xx <- df_xx %>% 
-  anti_join(stop_words)%>%
-  replace_contraction()
+  anti_join(stop_words)
+
+#%>%
+ # replace_contraction()
   
-df_xx <- filter(df_xx, !str_detect(word, "na"))
+df_xx <- filter(df_xx, !str_detect(word, "na")) #filtering out the na's in messages
+df_xx
 ```
 
+# SPAM Filtering
+```{r}
+#Removing punctuation
+df2_spam = df_spam %>% 
+  select(Message) 
+#%>%
+  #lemmatize_words(df$Message)
+
+head(df2_spam)
+
+df2_spam$Message <- (str_replace_all(df2_spam$Message, "[[:punct:]]", " "))
+head(df2_spam)
+
+df_xx_spam = df2_spam %>%
+  unnest_tokens(word, "Message")
+head(df_xx_spam)
+
+df_xx_spam <- df_xx_spam %>% 
+  anti_join(stop_words)
+
+#%>%
+ # replace_contraction()
+  
+df_xx_spam <- filter(df_xx_spam, !str_detect(word, "na")) #filtering out the na's in messages
+df_xx_spam
+```
+
+
+# HAM Filtering 
+```{r}
+#Removing punctuation
+df2_ham = df_ham %>% 
+  select(Message) 
+#%>%
+  #lemmatize_words(df$Message)
+
+head(df2_ham)
+
+df2_ham$Message <- (str_replace_all(df2_ham$Message, "[[:punct:]]", " "))
+head(df2_ham)
+
+df_xx_ham = df2_ham %>%
+  unnest_tokens(word, "Message")
+head(df_xx_ham)
+
+df_xx_ham <- df_xx_ham %>% 
+  anti_join(stop_words)
+
+#%>%
+ # replace_contraction()
+  
+df_xx_ham <- filter(df_xx_ham, !str_detect(word, "na")) #filtering out the na's in messages
+df_xx_ham
+```
+
+
+
+
+
+# Joined Count
 ```{r}
 head(df_xx %>%
   count(df_xx$word, sort = TRUE), 20)
 df_xx_count <- df_xx %>%
   count(word, sort=TRUE)
-#df$Category <- ifelse(df$Category=='ham',0,1)
 head(df_xx,5)
+```
+
+#Joined Sentiment 
+```{r}
+library(textdata)
+get_sentiments('afinn') #generic table (word vs value)
+
+df_sentiment_affin <- 
+  df_xx %>%
+  inner_join(get_sentiments("afinn")) # pull out only sentiment words
+
+#View(df_sentiment_affin)
+```
+
+#SPAM Sentiment
+```{r}
+library(textdata)
+get_sentiments('afinn') #generic table (word vs value)
+
+df_sentiment_affin_spam <- 
+  df_xx_spam %>%
+  inner_join(get_sentiments("afinn")) # pull out only sentiment words
+
+View(df_sentiment_affin_spam)
+```
+
+#HAM Sentiment
+```{r}
+library(textdata)
+get_sentiments('afinn') #generic table (word vs value)
+
+df_sentiment_affin_ham <- 
+  df_xx_ham %>%
+  inner_join(get_sentiments("afinn")) # pull out only sentiment words
+
+View(df_sentiment_affin_ham)
 ```
 
 
 
+#Joined Sentiment Chart
+```{r}
+table(df_sentiment_affin$value)
 
 
-#remove stop words, perform stemming/maybe lemmatization, handle aprosthropes, handle contractions, deal with numbers (?), spell correction if needed, language, SMOTE, account for text
+ggplot(data = df_sentiment_affin, 
+       aes(x=value)
+        )+
+  geom_histogram()+
+  ggtitle("Spam/Ham Classification Sentiment Range")+
+  theme_minimal()
 
 
+```
 
 
+#SPAM Sentiment Chart
+```{r}
+table(df_sentiment_affin_spam$value)
 
+
+ggplot(data = df_sentiment_affin_spam, 
+       aes(x=value)
+        )+
+  geom_histogram()+
+  ggtitle("Spam Text Sentiment Range")+
+  theme_minimal()
+
+```
+
+#HAM Sentiment Chart
+```{r}
+table(df_sentiment_affin_ham$value)
+
+
+ggplot(data = df_sentiment_affin_ham, 
+       aes(x=value)
+        )+
+  geom_histogram()+
+  ggtitle("Ham Text Sentiment Range")+
+  theme_minimal()
+```
+
+
+# Base Rate Analysis
 ```{r}
 print(table(df$Category))
 ```
@@ -109,6 +259,7 @@ print(prop.table(table(df$Category)))
 ```
 At 13.41%, this is clearly a skewed data set, aka rare event.
 
+# Base Rate Pie Chart
 ```{r, message = FALSE, warnings = FALSE}
 #creating pie chart for base rate
 count.data <- data.frame(
@@ -156,8 +307,6 @@ df <- df %>% anti_join(stop_words) #tidytext package
       
 
 ```
-
-
 
 
 ```{r}
@@ -238,14 +387,6 @@ datatable(journal_words_id)
 
 
 
-
-
-# Exploratory Data Analysis
-
-
-# Sentiment Analysis 
-
-
 # Topic Modeling - Latent Dirichlet Allocation
 ```{r}
 install.packages('topicmodels')
@@ -253,8 +394,6 @@ library(topicmodels)
 
 data("AssociatedPress")
 AssociatedPress
-
-
 ```
 
 ```{r}
@@ -266,5 +405,24 @@ AssociatedPress
 #              as.numeric(dat[,3]),  # class labels
 #              K = 3, dup_size = 0)  # function parameters
 ```
+
+#SMOTE using SVM
+```{r}
+#Creating a copy of the data
+df_copy <- df
+df_copy$Category <- ifelse(df_copy$Category=='ham',0,1).  #if ham, 0, if spam 1  
+
+#SMOTE
+head(df_copy)
+df_copy$Category <- as.factor(df_copy$Category)
+str(df_copy)
+trainset <- SMOTE(Category ~ ., df_copy, perc.over = 200, perc.under=100)
+
+prop.table(table(trainset$Category))
+```
+
+
+
+
 
 
