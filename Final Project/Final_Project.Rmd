@@ -227,13 +227,93 @@ total_words_id <- word_count_id %>%
 
 head(total_words_id, 12)
 
-journal_words_id <- left_join(word_count_id, total_words_id)
+text_words_id <- left_join(word_count_id, total_words_id)
 
-journal_words_id <- journal_words_id %>%
+text_words_id <- text_words_id %>%
   bind_tf_idf(word, id, n)
 
-datatable(journal_words_id)
+datatable(text_words_id)
 
+```
+
+#Topic Modeling
+
+## Beta
+```{r}
+#Remove stop words
+word_count_id <- word_count_id %>% 
+  anti_join(stop_words)
+
+head(word_count_id, 15)
+
+text_dtm <- word_count_id %>%
+  cast_dtm(id, word, n)
+
+text_lda <- LDA(text_dtm, k = 2, control = list(seed = 03092000))
+
+text_topics <- tidy(text_lda, matrix = "beta")
+
+text_documents <- tidy(text_lda, matrix = "gamma")
+
+datatable(text_topics)
+
+datatable(text_documents)
+```
+
+```{r}
+text_top_terms <- text_topics %>%
+  group_by(topic) %>%
+  top_n(15, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+
+datatable(text_top_terms)
+
+plt <- text_top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(term, beta, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  coord_flip() +
+  scale_x_reordered()
+
+plt
+
+```
+
+```{r}
+#Spread Plot 
+
+beta_spread_text <- text_topics %>%
+  mutate(topic = paste0("topic", topic)) %>%
+  spread(topic, beta) %>%
+  filter(topic1 > .001 | topic2 > .001) %>%
+  mutate(log_ratio = log2(topic2 / topic1)) %>% 
+  arrange(log_ratio)
+
+#Two topics
+datatable(beta_spread_text)
+
+data_plt_text <- tail(beta_spread_text, 15)
+
+data_plt_text <- rbind(data_plt_text, head(beta_spread_text, 15))
+
+split_plt_text <- data_plt_text %>% 
+  mutate(term = fct_reorder(term, log_ratio)) %>%
+  ggplot(aes(x=term,
+            y=log_ratio)
+            )+ geom_col()+
+            coord_flip()
+
+split_plt_text
+```
+
+
+
+## Gamma 
+```{r}
+text_documents <- tidy(text_lda, matrix = "gamma")
+datatable(text_documents)
 ```
 
 
