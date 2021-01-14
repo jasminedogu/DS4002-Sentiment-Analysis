@@ -17,8 +17,10 @@ output:
 knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, error=FALSE, cache = TRUE)
 #Import packages 
 library(tidyverse)
+library(reticulate)
 library(tidytext)
 library(textdata)
+use_python("/home/rstudio-user/.local/share/r-miniconda/envs/r-reticulate/bin/python", required= TRUE)
 #install.packages("tidyselect")
 library(tidyselect)
 library(stringr)
@@ -550,6 +552,7 @@ AssociatedPress
 #              K = 3, dup_size = 0)  # function parameters
 ```
 
+
 ```{r}
 #Regular Expressions
 df_regEx <- df
@@ -612,20 +615,55 @@ Under_Perc = round(Under, 1) * 100
 Under_Perc
 
 str(df_regEx)
-st
 newData <- SMOTE(Category ~ ., df_regEx, perc.over = Over_Perc,perc.under=Under_Perc)
 as.data.frame(table(newData$Category))
 
 View(newData)
 ```
 
-#SMOTE using SVM
 ```{r}
-library(sbo)
-install.packages("sbo")
-sbo(Category ~ ., df_regEx, size, alg, over = 100, rf.ntree = 50, svm.ker = "radial")
+Sys.which("python")
+py_install("pandas")
+#py_install("scikit-learn")
+#py_install("collections")
+#py_install("GLIBCXX_3.4.22")
 ```
 
+
+
+```{python}
+import pandas as pd
+df_python = pd.read_csv("/cloud/project/Datasets/regEx.csv")
+
+from collections import Counter
+from sklearn.datasets import make_classification
+from imblearn.over_sampling import SVMSMOTE 
+
+Y = df_python["Category"]
+X = df_python.drop(['Category'], axis=1)
+sm = SVMSMOTE(random_state=3092000)
+X_res, Y_res = sm.fit_resample(X, Y)
+
+df_svm_smote = pd.concat([Y_res,X_res], axis=1)
+
+df_svm_smote.to_csv('/cloud/project/Datasets/df_svm_smote2.csv', index=False) 
+GLIBCXX_3.4.22
+df_svm_smote.head()
+
+```
+
+
+
+
+SMOTE Dataset Using Python
+```{r}
+df_smote_svm <- read.csv("/cloud/project/Datasets/df_svm_smote.csv")
+df_smote_svm <- df_smote_svm %>% select(-"X") 
+df_smote_svm <- as.factor(df_smote_svm)
+str(df_smote_svm)
+df_smote_svm[sapply(df_smote_svm, is.numeric)] <- lapply(df_smote_svm[sapply(df_smote_svm, is.numeric)],as.factor)
+head(df_smote_svm)
+```
 
 ```{r}
 # Creating the Training and Testing Sets
@@ -643,12 +681,24 @@ data_test_smote <- sample(1:nrow(newData),
                round(0.3 * nrow(newData), 0), 
                replace = FALSE)
 
+data_train_smote_svm <- sample(1:nrow(df_smote_svm),
+               round(0.7 * nrow(df_smote_svm), 0), 
+               replace = FALSE)
+data_test_smote_svm <- sample(1:nrow(df_smote_svm),
+               round(0.3 * nrow(df_smote_svm), 0), 
+               replace = FALSE)
+
 #Assigning random selection to original df
 original_train <- df_regEx[data_train, ] #Should contain 70% of data points
 original_test <- df_regEx[data_test, ]
-#Assigning random selection to smote df 
+
+#Assigning random selection to smote df (this is for the model utilizing knn)
 smote_train <- newData[data_train_smote, ] #Should contain 70% of data points
 smote_test <- newData[data_test_smote, ]
+
+#Assigning random selection to smote df (this is for the model utilizing svm)
+smote_train_svm <- df_smote_svm[data_train_smote_svm, ] #Should contain 70% of data points
+smote_test_svm <- df_smote_svm[data_test_smote_svm, ]
 
 ```
 
@@ -670,6 +720,13 @@ classifier_normal <- svm(formula = Category ~ .,
                  kernel = 'radial')  #The kernel used in training and predicting
 #based on a study that was done 
 
+classifier_smote_svm <- svm(formula = Category ~ ., 
+                 data = smote_train_svm, 
+                 type = 'C-classification',  #Default
+                 #can change degree 
+                 kernel = 'radial')  #The kernel used in training and predicting
+#based on a study that was done 
+
 ```
 
 
@@ -681,6 +738,8 @@ y_pred_original <- predict(classifier_normal, newdata = original_test[-1])
 #SMOTE
 y_pred_original_smote <- predict(classifier_smote, newdata = smote_test[-1]) 
 
+#SMOTE SVM
+y_pred_original_smote_svm <- predict(classifier_smote_svm, newdata = smote_test_svm[-1]) 
 ```
 
 ### Confusion Matrix Results
@@ -695,17 +754,84 @@ cm_original
 #SMOTE
 cm_smote <- confusionMatrix(smote_test$Category,y_pred_original_smote, positive = "1")
 cm_smote
-```
-The accuracy and sensitivity were good relative to the basis, at 0.78 and 0.81 respectively. Something to note here is that the model overwhelmingly predicted the negative class, at a rate of 0.99448. This will be certainly be reflected in the F1 Score. 
 
+#SMOTE SVM
+cm_smote_svm <- confusionMatrix(smote_test_svm$Category,y_pred_original_smote_svm, positive = "1")
+cm_smote_svm
+```
+
+
+## Hyperparameter Tuning Proccess 
 ```{r}
-f1score_poly = 2*0.83766  *(129/(129+1235))/(0.83766   + (129/(1235+129)) )
-f1score_poly
+library(e1071)
+set.seed(03092000)
+#Original
+obj_original <- tune(svm, Category~., data = original_test, 
+            ranges = list(gamma = 2^(-1:1), 
+                          cost = 2^(2:4)),
+            tunecontrol = tune.control(sampling = "fix"))
+#obj_original ##gamma 0.5, cost 4
+summary(obj_original)
+
+#SMOTE - KNN
+obj_smote <- tune(svm, Category~., data = smote_test, 
+            ranges = list(gamma = 2^(-1:1), 
+                          cost = 2^(2:4)),
+            tunecontrol = tune.control(sampling = "fix"))
+#obj_smote ##gamma 1, cost 4
+summary(obj_smote)
+
 ```
-Our primary metric, the F1 Score, was calculated to be 0.1699 - this is awful. Let's try it with the radial kernel. 
 
 
+# Tuned Models
+```{r}
+#install.packages('e1071') 
+library(e1071) 
+set.seed(03092000)
 
+classifier_smote_tuned <- svm(formula = Category ~ ., 
+                 data = smote_train, 
+                 type = 'C-classification',  #Default
+                 #can change degree 
+                 kernel = 'radial',
+                 gamma=1,
+                 cost =4)  #The kernel used in training and predicting
+
+classifier_normal_tuned <- svm(formula = Category ~ ., 
+                 data = original_train, 
+                 type = 'C-classification',  #Default
+                 #can change degree 
+                 kernel = 'radial',
+                 gamma =.5,
+                 cost = 4)  #The kernel used in training and predicting
+#based on a study that was done 
+```
+
+# Tuned Prediction
+```{r}
+#Original
+# Predicting the test set results 
+y_pred_original_tuned <- predict(classifier_normal_tuned, newdata = original_test[-1]) 
+
+#SMOTE
+y_pred_original_smote_tuned <- predict(classifier_smote_tuned, newdata = smote_test[-1]) 
+
+```
+
+### Confusion Matrix Results for Tuned Models
+```{r}
+#Original
+# Making a Confusion Matrix 
+#install.packages("caret")
+library(caret)
+cm_original_tuned <- confusionMatrix(original_test$Category,y_pred_original_tuned, positive = "1")
+cm_original_tuned
+
+#SMOTE
+cm_smote_tuned <- confusionMatrix(smote_test$Category,y_pred_original_smote_tuned, positive = "1")
+cm_smote_tuned
+```
 
 
 
