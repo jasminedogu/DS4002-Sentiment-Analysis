@@ -57,6 +57,8 @@ We also wanted to do some background research regarding spam text messages to ge
 df <- read.csv("/cloud/project/Datasets/Text_Message_Classification.csv")
 head(df,5)
 ```
+
+
 ```{r}
 library(wordnet)
 library(textstem)
@@ -75,8 +77,7 @@ df_xx = df2 %>%
 head(df_xx)
 
 df_xx <- df_xx %>% 
-  anti_join(stop_words)%>%
-  replace_contraction()
+  anti_join(stop_words)
   
 df_xx <- filter(df_xx, !str_detect(word, "na"))
 ```
@@ -84,8 +85,11 @@ df_xx <- filter(df_xx, !str_detect(word, "na"))
 ```{r}
 head(df_xx %>%
   count(df_xx$word, sort = TRUE), 20)
+
 df_xx_count <- df_xx %>%
   count(word, sort=TRUE)
+
+df_xx_count$word <- as.factor(df_xx_count$word)
 #df$Category <- ifelse(df$Category=='ham',0,1)
 head(df_xx,5)
 ```
@@ -116,6 +120,7 @@ count.data <- data.frame(
   n = c(4825, 747),
   prop = c(86.59, 13.41)
 )
+
 mycols <- c("#474d84","#8d84ac")
 
 # Add label position
@@ -123,6 +128,8 @@ count.data <- count.data %>%
   arrange(desc(class)) %>%
   mutate(lab.ypos = cumsum(prop) - 0.5*prop)
 count.data
+
+
 br<- ggplot(count.data, aes(x = 2, y = prop, fill = class)) +
   geom_bar(stat = "identity", color = "white") +
   coord_polar(theta = "y", start = 0)+
@@ -138,22 +145,6 @@ br
 
 ```{r}
 #remove stop words, perform stemming/maybe lemmatization, handle aprosthropes, handle contractions, deal with numbers (?), spell correction if needed, language, SMOTE, account for text
-
-head(df)
-
-#View(stop_words)
-
-df <- df %>% 
-      mutate(Message = tolower(Message)) %>%
-     for (row in dataFrame) {
-       for (x in row ){
-         if(x == stop_words)
-         str_remove(df, x, "")
-       }
-     }
-
-df <- df %>% anti_join(stop_words) #tidytext package
-      
 
 ```
 
@@ -174,24 +165,34 @@ tokenword_plot = ggplotly(ggplot(
   coord_flip()+
   theme_light()+
   xlab("Token Words")+
-    ylab("Count")
-  )
+    ylab("Count") + ggtitle('Words that Appear Most in the Texts') )
 tokenword_plot
+
 
 df_xx <- tibble(df_xx)
 ```
 
 #Creating Unigrams and Bigrams 
 ```{r}
+
 #Bigrams 
 df_xx_ngrams_2 <- df2 %>%
   unnest_tokens(word, Message, token = "ngrams", n=2)
 
 head(datatable(df_xx_ngrams_2), 20)
 
+df_xx_ngrams_2 %>% 
+  count(word) %>% 
+  arrange(desc(n))
+
+
 #Trigrams
 df_xx_ngrams_3 <- df2 %>%
   unnest_tokens(word, Message, token = "ngrams", n=3)
+
+df_xx_ngrams_3 %>% 
+  count(word) %>% 
+  arrange(desc(n))
 
 head(datatable(df_xx_ngrams_3), 20)
 ```
@@ -258,6 +259,19 @@ text_documents <- tidy(text_lda, matrix = "gamma")
 datatable(text_topics)
 
 datatable(text_documents)
+
+gammaVals = data.frame(text_documents)
+
+gammaVals$document = as.numeric(gammaVals$document)
+str(gammaVals)
+
+gammaValsStats = gammaVals %>% 
+  filter(document %in% sample(1:nrow(df), round(31, 0), replace = FALSE)) 
+gammaValsStats
+
+gammaValsStatsTopic1 = gammaValsStats %>% filter(topic == 1) 
+gammaValsStatsTopic2 = gammaValsStats %>% filter(topic == 2) 
+gammaValsStatsTopic2
 ```
 
 ```{r}
@@ -303,7 +317,8 @@ split_plt_text <- data_plt_text %>%
   ggplot(aes(x=term,
             y=log_ratio)
             )+ geom_col()+
-            coord_flip()
+            coord_flip() +
+            ggtitle("The Top 15 Most Different Words Between the Two Topics")
 
 split_plt_text
 ```
