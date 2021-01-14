@@ -60,14 +60,49 @@ We also wanted to do some background research regarding spam text messages to ge
 ```{r}
 #reading in the dataset 
 df <- read.csv("/cloud/project/Datasets/Text_Message_Classification.csv")
+head(df)
+str(df)
 head(df,5)
 ```
+
 ```{r}
 library(wordnet)
 library(textstem)
 library(qdapDictionaries)
 library(qdap)
+library(iconv)
 
+#CorpusList <-  iconv(, to ="utf-8")
+
+dfCorpus = Corpus(VectorSource(df))  
+#dfCorpus = as.character(dfCorpus)
+inspect(dfCorpus) 
+
+clean_corpus <- function(corpus) {
+  # Remove punctuation
+  corpus <- tm_map(corpus, removePunctuation(), lazy=TRUE)
+  # Transform to lower case
+  corpus <- tm_map(corpus, tolower(corpus, as.character()), lazy=TRUE)
+  # Remove stopwords and strip whitespace
+  corpus <- tm_map(corpus, removeWords(), words = stopwords("en"), stripWhitespace(), lazy=TRUE)
+  # Lemmatize
+  corpus <- tm_map(corpus, lemmatize_strings(corpus, as.vector()), lazy=TRUE)
+  return(corpus)
+}
+
+
+?removePunctuation
+?stripWhitespace
+?lemmatize_strings
+?tm_map
+?content_transformer  #convert everything to the correct data type within the corpus
+
+clean_corpus(dfCorpus)
+
+```
+
+
+```{r}
 #Datasets for later 
 df_spam <- filter(df, df$Category =="spam")
 df_ham <-filter(df, df$Category =="ham")
@@ -77,27 +112,42 @@ df_ham <-filter(df, df$Category =="ham")
 df2 = df %>% 
   select(Message) 
 
-df2 = as.vector(df2) %>% 
-lemmatize_words()
+tm_map(df2, lemmatize_strings)
 
-head(df2)
+#%>%
+# replace_contraction() 
 
 df2$Message <- (str_replace_all(df2$Message, "[[:punct:]]", " "))
+
+
 head(df2)
 
 df_xx = df2 %>%
-  unnest_tokens(word, "Message")
+  unnest_tokens(word, "Message")  %>%
+
+
+
+
 head(df_xx)
 
 df_xx <- df_xx %>% 
   anti_join(stop_words)
 
-#%>%
- # replace_contraction()
+
   
 df_xx <- filter(df_xx, !str_detect(word, "na")) #filtering out the na's in messages
 df_xx
 ```
+
+corpus[[1]]
+[1] " earnest roughshod document serves workable primer regions recent history make 
+terrific th-grade learning tool samuel beckett applied iranian voting process bard 
+black comedy willie loved another trumpet blast may new mexican cinema -bornin "
+> corpus <- tm_map(corpus, lemmatize_strings)
+> corpus[[1]]
+[1] "earnest roughshod document serve workable primer region recent history make 
+terrific th - grade learn tool samuel beckett apply iranian vote process bard black 
+comedy willie love another trumpet blast may new mexican cinema - bornin"
 
 # SPAM Filtering
 ```{r}
@@ -386,7 +436,6 @@ datatable(journal_words_id)
 ```
 
 
-
 # Topic Modeling - Latent Dirichlet Allocation
 ```{r}
 install.packages('topicmodels')
@@ -406,19 +455,60 @@ AssociatedPress
 #              K = 3, dup_size = 0)  # function parameters
 ```
 
+```{r}
+#Regular Expressions
+df_regEx <- df
+df_regEx['Free'] <- NA
+df_regEx['Currency_Symbol'] <- NA
+df_regEx['Digits'] <- NA
+df_regEx['Link'] <- NA
+df_regEx['Call'] <- NA
+df_regEx['Mobile_Phone'] <- NA
+df_regEx['XXX'] <- NA
+df_regEx['Symbol'] <- NA
+df_regEx['Please'] <- NA
+df_regEx['Reply_Yes'] <- NA
+df_regEx['FreeMsg'] <- NA
+df_regEx['Won_Win'] <- NA
+df_regEx['Eighteen'] <- NA
+
+head(df_regEx)
+```
+
+
+```{r}
+library(tidyverse)
+
+df_regEx$Currency_Symbol <- sapply(df_regEx$Message,str_detect, pattern = "\\$|£")
+df_regEx$Free <- sapply(df_regEx$Message,str_detect, pattern = "([Ff][Rr][Ee][Ee])|([Uu][Rr][Gg][Ee][Nn][Tt])")
+df_regEx$Digits <- sapply(df_regEx$Message,str_detect, pattern = "\\d{4,10}")
+df_regEx$Link <- sapply(df_regEx$Message,str_detect, pattern = "([Ww]{3})|([Hh][Tt][Tt][Pp][Ss])|([Cc][Oo][Mm])")
+df_regEx$Call <- sapply(df_regEx$Message,str_detect, pattern = "[Cc][Aa][Ll][Ll]")
+df_regEx$Mobile_Phone <- sapply(df_regEx$Message,str_detect, pattern = "([Mm][Oo][Bb][Ii][Ll][Ee])|([Pp][Hh][Oo][Nn][Ee])")
+df_regEx$XXX <- sapply(df_regEx$Message,str_detect, pattern = "[Xx]{3}")
+df_regEx$Symbol <- sapply(df_regEx$Message,str_detect, pattern = "\\?|\\!")
+df_regEx$Please <- sapply(df_regEx$Message,str_detect, pattern = "[Pp][Ll][Ee][Aa][Ss][Ee]")
+df_regEx$Reply_Yes <- sapply(df_regEx$Message,str_detect, pattern = "([Yy][Ee][Ss])|([Nn][Oo])|([Rr][Ee][Pp][Ll][Yy]\\s[Yy][Ee][Ss])|([Rr][Ee][Pp][Ll][Yy])")
+df_regEx$FreeMsg <- sapply(df_regEx$Message,str_detect, pattern = "[Ff][Rr][Ee][Ee][Mm][Ss][Gg]")
+df_regEx$Won_Win <- sapply(df_regEx$Message,str_detect, pattern = "[Ww][OoIi][Nn]")
+df_regEx$Eighteen <- sapply(df_regEx$Message,str_detect, pattern = "18+?")
+regEx_removed <- df_regEx %>%
+  select(-c("Category","Message"))
+regEx_removed<- ifelse(regEx_removed==FALSE,0,1)
+df_regEx<- cbind(df_regEx$Category, regEx_removed)
+colnames(df_regEx)[1] <- "Category"
+df_regEx<- as.data.frame(df_regEx)
+df_regEx$Category <- ifelse(df_regEx$Category=='ham',0,1)  #if ham, 0, if spam 1
+unique(df_regEx$Category)
+str(df_regEx)
+View(df_regEx)
+```
+
 #SMOTE using SVM
 ```{r}
 #Creating a copy of the data
-df_copy <- df
-df_copy$Category <- ifelse(df_copy$Category=='ham',0,1).  #if ham, 0, if spam 1  
-
-#SMOTE
-head(df_copy)
-df_copy$Category <- as.factor(df_copy$Category)
-str(df_copy)
-trainset <- SMOTE(Category ~ ., df_copy, perc.over = 200, perc.under=100)
-
-prop.table(table(trainset$Category))
+smote = SMOTE( kind='svm' )
+X_smote, Y_smote = smote.fit_transform( X_data, Y_data )
 ```
 
 
