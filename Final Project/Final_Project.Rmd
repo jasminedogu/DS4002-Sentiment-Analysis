@@ -44,7 +44,6 @@ library(qdapDictionaries)
 library(datasets)
 library(dplyr)
 #install.packages("reticulate")
-library(reticulate)
 set.seed(03092000)
 ```
 
@@ -573,8 +572,6 @@ head(df_regEx)
 
 
 ```{r}
-library(tidyverse)
-
 df_regEx$Currency_Symbol <- sapply(df_regEx$Message,str_detect, pattern = "\\$|£")
 df_regEx$Free <- sapply(df_regEx$Message,str_detect, pattern = "([Ff][Rr][Ee][Ee])|([Uu][Rr][Gg][Ee][Nn][Tt])")
 df_regEx$Digits <- sapply(df_regEx$Message,str_detect, pattern = "\\d{4,10}")
@@ -595,17 +592,119 @@ df_regEx<- cbind(df_regEx$Category, regEx_removed)
 colnames(df_regEx)[1] <- "Category"
 df_regEx<- as.data.frame(df_regEx)
 df_regEx$Category <- ifelse(df_regEx$Category=='ham',0,1)  #if ham, 0, if spam 1
-unique(df_regEx$Category)
+df_regEx <- df_regEx %>% mutate_if(is.character,as.factor)
+df_regEx$Category <- as.factor(df_regEx$Category)
 str(df_regEx)
 View(df_regEx)
 ```
 
+#SMOTE using KNN
+```{r}
+unique(df_regEx$Category)
+result <- df_regEx %>% group_by(Category) %>% count()
+result
+
+Over = ((0.6 * 4825) - 747 ) / 747
+Under = (0.4 * 4825) / (747 * Over)
+Over_Perc = round(Over, 1) * 100
+Over_Perc
+Under_Perc = round(Under, 1) * 100
+Under_Perc
+
+str(df_regEx)
+st
+newData <- SMOTE(Category ~ ., df_regEx, perc.over = Over_Perc,perc.under=Under_Perc)
+as.data.frame(table(newData$Category))
+
+View(newData)
+```
+
 #SMOTE using SVM
 ```{r}
-#Creating a copy of the data
-smote = SMOTE( kind='svm' )
-X_smote, Y_smote = smote.fit_transform( X_data, Y_data )
+library(sbo)
+install.packages("sbo")
+sbo(Category ~ ., df_regEx, size, alg, over = 100, rf.ntree = 50, svm.ker = "radial")
 ```
+
+
+```{r}
+# Creating the Training and Testing Sets
+data_train <- sample(1:nrow(df_regEx),
+               round(0.7 * nrow(df_regEx), 0), 
+               replace = FALSE)
+data_test <- sample(1:nrow(df_regEx),
+               round(0.3 * nrow(df_regEx), 0), 
+               replace = FALSE)
+
+data_train_smote <- sample(1:nrow(newData),
+               round(0.7 * nrow(newData), 0), 
+               replace = FALSE)
+data_test_smote <- sample(1:nrow(newData),
+               round(0.3 * nrow(newData), 0), 
+               replace = FALSE)
+
+#Assigning random selection to original df
+original_train <- df_regEx[data_train, ] #Should contain 70% of data points
+original_test <- df_regEx[data_test, ]
+#Assigning random selection to smote df 
+smote_train <- newData[data_train_smote, ] #Should contain 70% of data points
+smote_test <- newData[data_test_smote, ]
+
+```
+
+## Radial Kernel Training 
+```{r}
+#install.packages('e1071') 
+library(e1071) 
+set.seed(03092000)
+classifier_smote <- svm(formula = Category ~ ., 
+                 data = smote_train, 
+                 type = 'C-classification',  #Default
+                 #can change degree 
+                 kernel = 'radial')  #The kernel used in training and predicting
+
+classifier_normal <- svm(formula = Category ~ ., 
+                 data = original_train, 
+                 type = 'C-classification',  #Default
+                 #can change degree 
+                 kernel = 'radial')  #The kernel used in training and predicting
+#based on a study that was done 
+
+```
+
+
+```{r}
+#Original
+# Predicting the test set results 
+y_pred_original <- predict(classifier_normal, newdata = original_test[-1]) 
+
+#SMOTE
+y_pred_original_smote <- predict(classifier_smote, newdata = smote_test[-1]) 
+
+```
+
+### Confusion Matrix Results
+```{r}
+#Original
+# Making a Confusion Matrix 
+#install.packages("caret")
+library(caret)
+cm_original <- confusionMatrix(original_test$Category,y_pred_original, positive = "1")
+cm_original
+
+#SMOTE
+cm_smote <- confusionMatrix(smote_test$Category,y_pred_original_smote, positive = "1")
+cm_smote
+```
+The accuracy and sensitivity were good relative to the basis, at 0.78 and 0.81 respectively. Something to note here is that the model overwhelmingly predicted the negative class, at a rate of 0.99448. This will be certainly be reflected in the F1 Score. 
+
+```{r}
+f1score_poly = 2*0.83766  *(129/(129+1235))/(0.83766   + (129/(1235+129)) )
+f1score_poly
+```
+Our primary metric, the F1 Score, was calculated to be 0.1699 - this is awful. Let's try it with the radial kernel. 
+
+
 
 
 
