@@ -65,6 +65,7 @@ str(df)
 head(df,5)
 ```
 
+
 ```{r}
 library(wordnet)
 library(textstem)
@@ -125,29 +126,29 @@ head(df2)
 df_xx = df2 %>%
   unnest_tokens(word, "Message")  %>%
 
-
-
-
 head(df_xx)
 
 df_xx <- df_xx %>% 
   anti_join(stop_words)
-
-
   
 df_xx <- filter(df_xx, !str_detect(word, "na")) #filtering out the na's in messages
 df_xx
 ```
 
-corpus[[1]]
-[1] " earnest roughshod document serves workable primer regions recent history make 
-terrific th-grade learning tool samuel beckett applied iranian voting process bard 
-black comedy willie loved another trumpet blast may new mexican cinema -bornin "
-> corpus <- tm_map(corpus, lemmatize_strings)
-> corpus[[1]]
-[1] "earnest roughshod document serve workable primer region recent history make 
-terrific th - grade learn tool samuel beckett apply iranian vote process bard black 
-comedy willie love another trumpet blast may new mexican cinema - bornin"
+```{r}
+#code prof wright gave to help us w lemmatize
+
+#corpus[[1]]
+#[1] " earnest roughshod document serves workable primer regions recent history make 
+#terrific th-grade learning tool samuel beckett applied iranian voting process bard 
+#black comedy willie loved another trumpet blast may new mexican cinema -bornin "
+#> corpus <- tm_map(corpus, lemmatize_strings)
+#> corpus[[1]]
+#[1] "earnest roughshod document serve workable primer region recent history make 
+#terrific th - grade learn tool samuel beckett apply iranian vote process bard black 
+#comedy willie love another trumpet blast may new mexican cinema - bornin"
+```
+
 
 # SPAM Filtering
 ```{r}
@@ -197,8 +198,6 @@ head(df_xx_ham)
 df_xx_ham <- df_xx_ham %>% 
   anti_join(stop_words)
 
-#%>%
- # replace_contraction()
   
 df_xx_ham <- filter(df_xx_ham, !str_detect(word, "na")) #filtering out the na's in messages
 df_xx_ham
@@ -212,8 +211,14 @@ df_xx_ham
 ```{r}
 head(df_xx %>%
   count(df_xx$word, sort = TRUE), 20)
+
 df_xx_count <- df_xx %>%
   count(word, sort=TRUE)
+
+
+df_xx_count$word <- as.factor(df_xx_count$word)
+#df$Category <- ifelse(df$Category=='ham',0,1)
+
 head(df_xx,5)
 ```
 
@@ -317,6 +322,7 @@ count.data <- data.frame(
   n = c(4825, 747),
   prop = c(86.59, 13.41)
 )
+
 mycols <- c("#474d84","#8d84ac")
 
 # Add label position
@@ -324,6 +330,8 @@ count.data <- count.data %>%
   arrange(desc(class)) %>%
   mutate(lab.ypos = cumsum(prop) - 0.5*prop)
 count.data
+
+
 br<- ggplot(count.data, aes(x = 2, y = prop, fill = class)) +
   geom_bar(stat = "identity", color = "white") +
   coord_polar(theta = "y", start = 0)+
@@ -339,22 +347,6 @@ br
 
 ```{r}
 #remove stop words, perform stemming/maybe lemmatization, handle aprosthropes, handle contractions, deal with numbers (?), spell correction if needed, language, SMOTE, account for text
-
-head(df)
-
-#View(stop_words)
-
-df <- df %>% 
-      mutate(Message = tolower(Message)) %>%
-     for (row in dataFrame) {
-       for (x in row ){
-         if(x == stop_words)
-         str_remove(df, x, "")
-       }
-     }
-
-df <- df %>% anti_join(stop_words) #tidytext package
-      
 
 ```
 
@@ -373,24 +365,34 @@ tokenword_plot = ggplotly(ggplot(
   coord_flip()+
   theme_light()+
   xlab("Token Words")+
-    ylab("Count")
-  )
+    ylab("Count") + ggtitle('Words that Appear Most in the Texts') )
 tokenword_plot
+
 
 df_xx <- tibble(df_xx)
 ```
 
 #Creating Unigrams and Bigrams 
 ```{r}
+
 #Bigrams 
 df_xx_ngrams_2 <- df2 %>%
   unnest_tokens(word, Message, token = "ngrams", n=2)
 
 head(datatable(df_xx_ngrams_2), 20)
 
+df_xx_ngrams_2 %>% 
+  count(word) %>% 
+  arrange(desc(n))
+
+
 #Trigrams
 df_xx_ngrams_3 <- df2 %>%
   unnest_tokens(word, Message, token = "ngrams", n=3)
+
+df_xx_ngrams_3 %>% 
+  count(word) %>% 
+  arrange(desc(n))
 
 head(datatable(df_xx_ngrams_3), 20)
 ```
@@ -426,13 +428,107 @@ total_words_id <- word_count_id %>%
 
 head(total_words_id, 12)
 
-journal_words_id <- left_join(word_count_id, total_words_id)
+text_words_id <- left_join(word_count_id, total_words_id)
 
-journal_words_id <- journal_words_id %>%
+text_words_id <- text_words_id %>%
   bind_tf_idf(word, id, n)
 
-datatable(journal_words_id)
+datatable(text_words_id)
 
+```
+
+#Topic Modeling
+
+## Beta
+```{r}
+#Remove stop words
+word_count_id <- word_count_id %>% 
+  anti_join(stop_words)
+
+head(word_count_id, 15)
+
+text_dtm <- word_count_id %>%
+  cast_dtm(id, word, n)
+
+text_lda <- LDA(text_dtm, k = 2, control = list(seed = 03092000))
+
+text_topics <- tidy(text_lda, matrix = "beta")
+
+text_documents <- tidy(text_lda, matrix = "gamma")
+
+datatable(text_topics)
+
+datatable(text_documents)
+
+gammaVals = data.frame(text_documents)
+
+gammaVals$document = as.numeric(gammaVals$document)
+str(gammaVals)
+
+gammaValsStats = gammaVals %>% 
+  filter(document %in% sample(1:nrow(df), round(31, 0), replace = FALSE)) 
+gammaValsStats
+
+gammaValsStatsTopic1 = gammaValsStats %>% filter(topic == 1) 
+gammaValsStatsTopic2 = gammaValsStats %>% filter(topic == 2) 
+gammaValsStatsTopic2
+```
+
+```{r}
+text_top_terms <- text_topics %>%
+  group_by(topic) %>%
+  top_n(15, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+
+datatable(text_top_terms)
+
+plt <- text_top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(term, beta, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  coord_flip() +
+  scale_x_reordered()
+
+plt
+
+```
+
+```{r}
+#Spread Plot 
+
+beta_spread_text <- text_topics %>%
+  mutate(topic = paste0("topic", topic)) %>%
+  spread(topic, beta) %>%
+  filter(topic1 > .001 | topic2 > .001) %>%
+  mutate(log_ratio = log2(topic2 / topic1)) %>% 
+  arrange(log_ratio)
+
+#Two topics
+datatable(beta_spread_text)
+
+data_plt_text <- tail(beta_spread_text, 15)
+
+data_plt_text <- rbind(data_plt_text, head(beta_spread_text, 15))
+
+split_plt_text <- data_plt_text %>% 
+  mutate(term = fct_reorder(term, log_ratio)) %>%
+  ggplot(aes(x=term,
+            y=log_ratio)
+            )+ geom_col()+
+            coord_flip() +
+            ggtitle("The Top 15 Most Different Words Between the Two Topics")
+
+split_plt_text
+```
+
+
+
+## Gamma 
+```{r}
+text_documents <- tidy(text_lda, matrix = "gamma")
+datatable(text_documents)
 ```
 
 
