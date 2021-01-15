@@ -471,12 +471,11 @@ gammaValsStatsTopic2 = gammaValsStats %>% filter(topic == 2)
 The betas in our models were generally very low, ranging from .023 to 8.54 x 10^-9. This makes sense due to the nature of our text, being shorter SMS items rather than long, superfluous documents. As a general principle, the beta will increase as the number of words within the topic increases. 
 
   
-We next examined the gamma values of the rates. In a very good model, we would expect our gamma rates to be able to generally classify documents with gamma values equivalent to the base rates of the data set ~13%/~87%. This is becuase we are hoping to equate the two unknown topics to the spam and non-spam observations. However, it is evident that our gamma values did not support that this topic modeling was effective method for the classification of our data set, as most most values remained around 0.50 for both topics 1 and two. 
+We next examined the gamma values of the rates. In a very good model, we would expect our gamma rates to be able to generally classify documents with gamma values equivalent to the base rates of the data set ~13%/~87%. This is because we are hoping to equate the two unknown topics to the spam and non-spam observations. However, it is evident that our gamma values did not support that this topic modeling was effective method for the classification of our data set, as most most values remained around 0.50 for both topics 1 and two. 
 
 ## Primary Hypothesis Evaluation Two Sample T-Test
 
-
-To properly assess the statistical significance of our gamma results betwen the topics, we chose to perform a two sample t-test. We first confirmed assumptions that would apply towards the use of a two sample t-test, such as independence, random sampling from a population, continuous data, normal distribution, and equal variance. 
+To properly assess the statistical significance of our gamma results between the topics, we chose to perform a two sample t-test. We first confirmed assumptions that would apply towards the use of a two sample t-test, such as independence, random sampling from a population, continuous data, normal distribution, and equal variance. 
 
 ```{r}
 set.seed(03092000)
@@ -484,7 +483,7 @@ t.test(gammaValsStatsTopic1$gamma, gammaValsStatsTopic2$gamma)
 ```
   
   
-  Examining the t-test results, we found that we had a p-value of 0.9423. Because we are testing at the 0.05 significance level, we fail to reject the null hypothesis at the 0.05 level. Thus, we can conclude that the variation between spam and non-spam messages within the LDA Topic Model Gamma will not be statistically significant (alpha of 0.05). 
+Examining the t-test results, we found that we had a p-value of 0.9423. Because we are testing at the 0.05 significance level, we fail to reject the null hypothesis at the 0.05 level. Thus, we can conclude that the variation between spam and non-spam messages within the LDA Topic Model Gamma will not be statistically significant (alpha of 0.05). 
 
 ## Further Assessments for Differentiating Topics
 ```{r}
