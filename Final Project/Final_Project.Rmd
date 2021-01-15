@@ -10,20 +10,16 @@ output:
   pdf_document:
     toc: yes
 ---
-```{r}
-py_config() #not run to maintain privacy
-```
-
 #Cleaning the Data 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, error=FALSE, cache = TRUE)
 #Import packages 
 library(tidyverse)
-library(reticulate)
+#library(reticulate)
 library(tidytext)
 library(textdata)
-use_python("/home/rstudio-user/.local/share/r-miniconda/envs/r-reticulate/bin/python",required= TRUE)
-#install.packages("tidyselect")
+#use_python("/home/rstudio-user/.local/share/r-miniconda/envs/r-reticulate/bin/python",required= TRUE)
+#install.packages("tidyverse")
 library(tidyselect)
 library(stringr)
 library(caret)
@@ -627,19 +623,19 @@ df_python = py_run_string(pd.read_csv("/cloud/project/Datasets/regEx.csv"))
 ```{r}
 
 
-library(reticulate)
-use_python("/home/rstudio-user/.local/share/r-miniconda/envs/r-reticulate/bin/python", required= TRUE)
-py_run_string()
+#library(reticulate)
+#use_python("/home/rstudio-user/.local/share/r-miniconda/envs/r-reticulate/bin/python", required= TRUE)
+#py_run_string()
 
 
-Sys.which("python")
+#Sys.which("python")
 
 
 
 
-py_discover_config()
-py_install("pandas")
-py_install("scikit-learn")
+#py_discover_config()
+#py_install("pandas")
+#py_install("scikit-learn")
 #py_install("collections")
 #py_install("GLIBCXX_3.4.22")
 ```
@@ -647,30 +643,28 @@ py_install("scikit-learn")
 
 
 ```{python}
-df_python = pd.read_csv("/cloud/project/Datasets/regEx.csv")
-import pandas as pd
-from collections import Counter
-from sklearn.datasets import make_classification
-from imblearn.over_sampling import SVMSMOTE 
+#df_python = pd.read_csv("/cloud/project/Datasets/regEx.csv")
+#import pandas as pd
+#from collections import Counter
+#from sklearn.datasets import make_classification
+#from imblearn.over_sampling import SVMSMOTE 
 
-Y = df_python["Category"]
-X = df_python.drop(['Category'], axis=1)
-sm = SVMSMOTE(random_state=3092000)
-X_res, Y_res = sm.fit_resample(X, Y)
+#Y = df_python["Category"]
+#X = df_python.drop(['Category'], axis=1)
+#sm = SVMSMOTE(random_state=3092000)
+#X_res, Y_res = sm.fit_resample(X, Y)
 
-df_svm_smote = pd.concat([Y_res,X_res], axis=1)
+#df_svm_smote = pd.concat([Y_res,X_res], axis=1)
 
-df_svm_smote.to_csv('/cloud/project/Datasets/df_svm_smote2.csv', index=False) 
-GLIBCXX_3.4.22
-df_svm_smote.head()
-
+#df_svm_smote.to_csv('/cloud/project/Datasets/df_svm_smote2.csv', index=False) 
+#GLIBCXX_3.4.22
+#df_svm_smote.head()
 ```
-
-
 
 
 SMOTE Dataset Using Python
 ```{r}
+#utilized the dataframe we saved over from the jupyter notebook
 df_smote_svm <- read.csv("/cloud/project/Datasets/df_svm_smote.csv")
 df_smote_svm <- df_smote_svm %>% select(-"X") 
 df_smote_svm[sapply(df_smote_svm, is.numeric)] <- lapply(df_smote_svm[sapply(df_smote_svm, is.numeric)],as.factor)
