@@ -545,7 +545,7 @@ We then decided it could be useful to analyze the two topics by comparing the 15
 
 
 
-
+# Modeling - Suport Vector Machine 
 ```{r}
 #Regular Expressions
 df_regEx <- df
@@ -681,7 +681,7 @@ smote_train_svm <- df_smote_svm[data_train_smote_svm, ] #Should contain 70% of d
 smote_test_svm <- df_smote_svm[data_test_smote_svm, ]
 ```
 
-After creating the training and testing sets, we can move onto the predictive model building.Moving onto the actual predictive model creation, our group decided to use Radial Support Vector Machines. We believed that this algorithm would be the most successful given the nature of our dataset. Similarly, we found multiple research studies that supported this thought process. For example, in the International Journal of Scientific and Technology Research, there was an article that looked at classifying SPAM Messages with a dataset very similar to ours structurally. They looked at how their predictive models performed when using various algorithms, like KNN, K means, SVM, Linear Regression, Decision Trees to name a few. In their studies, SVM with a radial kernel performed the best overall with most metrics at or above 0.98, therefore we proceeded with selecting the Radial SVM model to implement on our data.
+After creating the training and testing sets, we can move onto the predictive model building. Moving onto the actual predictive model creation, our group decided to use Radial Support Vector Machines. We believed that this algorithm would be the most successful given the nature of our dataset. Similarly, we found multiple research studies that supported this thought process. For example, in the International Journal of Scientific and Technology Research, there was an article that looked at classifying SPAM Messages with a dataset very similar to ours structurally. They looked at how their predictive models performed when using various algorithms, like KNN, K means, SVM, Linear Regression, Decision Trees to name a few. In their studies, SVM with a radial kernel performed the best overall with most metrics at or above 0.98, therefore we proceeded with selecting the Radial SVM model to implement on our data.
 
 ## SVM Radial Kernel Baseline Model Creation 
 ```{r}
@@ -872,6 +872,22 @@ kable(results)
 ```
 
 As a result of our findings, because our SVM Model utilizing the SMOTE-KNN data sampling algorithm had a recall rate of 98.40%, which is greater than the 90% recall rate as mentioned in our secondary null hypothesis, we reject the null hypothesis. Our results are statistically significant.
+
+# Cost Savings 
+
+  We estimate that the model will have the potential to save Americans ~$624 million per year if a large size U.S. cellular provider were to implement this model. 
+
+
+![Cost Savings Calculations](/cloud/project/Images/DS 4002 Cost_Savings_Spam_Classification.png) 
+
+
+*Assumptions:*
+    - U.S. loss of $10.5 billion in 2018 from cellular-related spam messages (Average American lost  $32.01/ year)
+    - A message will be blocked by the cellular provider if it is believed to be spam
+    - Outreach 133 M American customers/year given that top 3 cellular service providers have an average of 133 M coverage/year 
+    - Data is representative of the current U.S. population
+
+
 
 #Limitations
 When looking at how our model and analysis could be implemented in the future, it is important to note some of the limitations. 
