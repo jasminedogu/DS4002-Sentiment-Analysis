@@ -16,6 +16,7 @@ knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, error=FALSE, c
 #Import packages 
 library(tidyverse)
 #library(reticulate)
+install.packages("tidytext")
 library(tidytext)
 library(textdata)
 #use_python("/home/rstudio-user/.local/share/r-miniconda/envs/r-reticulate/bin/python",required= TRUE)
@@ -28,13 +29,16 @@ library(rpart)
 library(RTextTools)
 library(tm)
 library(DMwR)
+install.packages("DT")
 library(DT)
 #install.packages("topicmodels")
 library(tm)
+install.packages("plotly")
 library(plotly)
 #install.packages("LDAvis")
 library(LDAvis)
 library(qdap)
+install.packages("topicmodels")
 library(topicmodels)
 library(ggplot2)
 library(googleLanguageR)
@@ -105,7 +109,7 @@ df2$Message <- (str_replace_all(df2$Message, "[[:punct:]]", " "))
 head(df2)
 
 df_xx = df2 %>%
-  unnest_tokens(word, "Message")  %>%
+  unnest_tokens(word, "Message")
 
 head(df_xx)
 
@@ -171,10 +175,9 @@ df_xx_ham
 
 
 
-
-
-# Joined Count
 ```{r}
+## Joined Count
+
 head(df_xx %>%
   count(df_xx$word, sort = TRUE), 20)
 
@@ -188,7 +191,7 @@ df_xx_count$word <- as.factor(df_xx_count$word)
 head(df_xx,5)
 ```
 
-#Joined Sentiment 
+## Joined Sentiment 
 ```{r}
 library(textdata)
 get_sentiments('afinn') #generic table (word vs value)
@@ -200,7 +203,7 @@ df_sentiment_affin <-
 #View(df_sentiment_affin)
 ```
 
-#SPAM Sentiment
+## SPAM Sentiment
 ```{r}
 library(textdata)
 get_sentiments('afinn') #generic table (word vs value)
@@ -212,7 +215,7 @@ df_sentiment_affin_spam <-
 View(df_sentiment_affin_spam)
 ```
 
-#HAM Sentiment
+## HAM Sentiment
 ```{r}
 library(textdata)
 get_sentiments('afinn') #generic table (word vs value)
@@ -226,7 +229,7 @@ View(df_sentiment_affin_ham)
 
 
 
-#Joined Sentiment Chart
+## Joined Sentiment Chart
 ```{r}
 table(df_sentiment_affin$value)
 
@@ -242,7 +245,7 @@ ggplot(data = df_sentiment_affin,
 ```
 
 
-#SPAM Sentiment Chart
+## SPAM Sentiment Chart
 ```{r}
 table(df_sentiment_affin_spam$value)
 
@@ -256,7 +259,7 @@ ggplot(data = df_sentiment_affin_spam,
 
 ```
 
-#HAM Sentiment Chart
+## HAM Sentiment Chart
 ```{r}
 table(df_sentiment_affin_ham$value)
 
@@ -270,7 +273,7 @@ ggplot(data = df_sentiment_affin_ham,
 ```
 
 
-# Base Rate Analysis
+# Base Rate Assessment
 ```{r}
 print(table(df$Category))
 ```
@@ -309,14 +312,16 @@ br
 #ggsave(br,file="base_rate.png", bg = "transparent")
 ```
 
-# Data Cleaning 
+# Topic Modeling 
+
+  Topic Modeling is a form of unsupervised machine learning that works similar to clustering. Topic Modeling utilizes soft clustering, which means that documents can be composed of multiple documents for example. One of the most commonly utilized forms of topic modeling is Latent Dirichlet Allocaiton (LDA), which we will be utilizing in our topic modeling analysis. With our topic modeling analysis, we will aim to explore and answer our primary hypothesis - hopefully being able to easily identify and fit the two topics into spam and ham messages. 
 
 ```{r}
 #remove stop words, perform stemming/maybe lemmatization, handle aprosthropes, handle contractions, deal with numbers (?), spell correction if needed, language, SMOTE, account for text
 
 ```
 
-
+## Top Words 
 ```{r}
 
 df_xx_count$word <- as.factor(df_xx_count$word) 
@@ -337,15 +342,22 @@ tokenword_plot
 
 df_xx <- tibble(df_xx)
 ```
+The words that appear most in the texts above are illustrated above, with top 5 words being...
+    - Call : 590 Appearances 
+    - 2  : 533 Appearances 
+    - ur  : 391 Appearances 
+    - 4  :  327 Appearances 
+    - gt  : 318 Appearances 
 
-#Creating Unigrams and Bigrams 
+
+## Assessment of Unigrams and Bigrams 
 ```{r}
 
 #Bigrams 
 df_xx_ngrams_2 <- df2 %>%
   unnest_tokens(word, Message, token = "ngrams", n=2)
 
-head(datatable(df_xx_ngrams_2), 20)
+#head(datatable(df_xx_ngrams_2), 20)
 
 df_xx_ngrams_2 %>% 
   count(word) %>% 
@@ -360,8 +372,13 @@ df_xx_ngrams_3 %>%
   count(word) %>% 
   arrange(desc(n))
 
-head(datatable(df_xx_ngrams_3), 20)
+#head(datatable(df_xx_ngrams_3), 20)
 ```
+    We wanted to take a look at the bigrams and trigrams of the text data, in anticipation for potentially utilizing them later in our text classification model. 
+  
+    The results of the bigrams demonstrated the the top 3 bigrams were "i m", "lt gt", and "i ll" with 425, 276, and 204 appearances respectively. This was informative as we realized that the frequency of the appearance of bigrams was not at a level that would make it particularly useful for feature engineering, given that the most frequent bigram, appeared less than 8% of the overall spam texts.
+    
+    The resutls of the trigrams were equally as informative as they were unfruitful. The top 3 trigrams were "i don t", "i ll call", and "how are you" with 73, 57, and 44 appearances respectively. Once again, we realized that trigrams would not be a sufficient feature due to its infrequency within the overall dataset. 
 
 
 ```{r}
@@ -378,7 +395,7 @@ df_tf
 df_tf$Message <- (str_replace_all(df_tf$Message, "[[:punct:]]", " "))
 
 df_tf$Message <- (str_remove_all(df_tf$Message, "NA")) 
-df_tf
+#df_tf
 
 #Counting of words, with ID
 
@@ -386,13 +403,13 @@ word_count_id <- df_tf %>%
   unnest_tokens(word, Message) %>%
   count(id, word, sort = TRUE)
 
-head(word_count_id, 8)
+#head(word_count_id, 8)
 
 total_words_id <- word_count_id %>% 
   group_by(id) %>% 
   summarize(total = sum(n))
 
-head(total_words_id, 12)
+#head(total_words_id, 12)
 
 text_words_id <- left_join(word_count_id, total_words_id)
 
@@ -403,9 +420,18 @@ datatable(text_words_id)
 
 ```
 
-#Topic Modeling
+  We next wanted to create a table that contained aggregated information on the text messages, words, number of appearances, as well as tf, idf, and tf-idf metrics. Particularly, we were interested in the tf-idf metric for providing insights regarding the importance of words relative to a document or corpus. 
 
-## Beta
+    - TFIDF, which stands for "term frequency–inverse document frequency", is a numerical statistic that will reflect how important a word is to a document in a corpus. 
+
+
+## Beta and Gamma
+
+  Within Latent Dirchlet Allocation, we want to particularly keep in mind two important metrics: beta and gamma. 
+    - Gamma can be defined as the estimated proportion of words from a topic generated by that topic
+    - Beta can be defined as the density of words within a topic
+    
+  
 ```{r}
 #Remove stop words
 word_count_id <- word_count_id %>% 
@@ -431,15 +457,34 @@ gammaVals = data.frame(text_documents)
 gammaVals$document = as.numeric(gammaVals$document)
 str(gammaVals)
 
+set.seed(03092000)
 gammaValsStats = gammaVals %>% 
   filter(document %in% sample(1:nrow(df), round(31, 0), replace = FALSE)) 
-gammaValsStats
+#gammaValsStats
 
 gammaValsStatsTopic1 = gammaValsStats %>% filter(topic == 1) 
 gammaValsStatsTopic2 = gammaValsStats %>% filter(topic == 2) 
-gammaValsStatsTopic2
+#gammaValsStatsTopic2
 ```
+  The betas in our models were generally very low, ranging from .023 to 8.54 x 10^-9. This makes sense due to the nature of our text, being shorter SMS items rather than long, superfluous documents. As a general principle, the beta will increase as the number of words within the topic increases. 
 
+  
+  We next examined the gamma values of the rates. In a very good model, we would expect our gamma rates to be able to generally classify documents with gamma values equivalent to the base rates of the data set ~13%/~87%. This is becuase we are hoping to equate the two unknown topics to the spam and non-spam observations. However, it is evident that our gamma values did not support that this topic modeling was effective method for the classification of our data set, as most most values remained around 0.50 for both topics 1 and two. 
+
+## Primary Hypothesis Evaluation Two Sample T-Test
+
+
+  To properly assess the statistical significance of our gamma results betwen the topics, we chose to perform a two sample t-test. We first confirmed assumptions that would apply towards the use of a two sample t-test, such as independence, random sampling from a population, continuous data, normal distribution, and equal variance. 
+
+```{r}
+set.seed(03092000)
+t.test(gammaValsStatsTopic1$gamma, gammaValsStatsTopic2$gamma)
+```
+  
+  
+  Examining the t-test results, we found that we had a p-value of 0.9423. Because we are testing at the 0.05 significance level, we fail to reject the null hypothesis at the 0.05 level. Thus, we can conclude that the variation between spam and non-spam messages within the LDA Topic Model Gamma will not be statistically significant (alpha of 0.05). 
+
+## Further Assessments for Differentiating Topics
 ```{r}
 text_top_terms <- text_topics %>%
   group_by(topic) %>%
@@ -460,7 +505,12 @@ plt <- text_top_terms %>%
 plt
 
 ```
+  
+  Examining the two "unknown" topics, LDA topic modeling does not make it too obvious to qualitatively infer which topic is which, as shown when examining the top 15 words in terms of beta-valuation. Topic 1 showed slightly more structure, having top words that mentioned time, location, place. Topic 2 was slighly more conversational, with the utilization of slang appearing at times. A lot of words appeared to have many similarities. 
+  While this was not what we were ideally looking for, this was not too shocking as many spam messages purposefully mimic human linguistic patterns to trick humans into engaging with the message. 
+  
 
+ 
 ```{r}
 #Spread Plot 
 
@@ -488,24 +538,10 @@ split_plt_text <- data_plt_text %>%
 
 split_plt_text
 ```
+  We then decided it could be useful to analyze the two topics by comparing the 15 most different words for each topic between the two topics. Ths was done using a log ratio of the beta values for each word. it appears that topic 1's most differing word was "house", while topic 2's most differing word was "week". it seems like there was a clear difference in the log ratio valuation separating the top 15 words for each topic, but this was not too evident and helpful in our classification process. 
 
 
 
-## Gamma 
-```{r}
-text_documents <- tidy(text_lda, matrix = "gamma")
-datatable(text_documents)
-```
-
-
-# Topic Modeling - Latent Dirichlet Allocation
-```{r}
-install.packages('topicmodels')
-library(topicmodels)
-
-data("AssociatedPress")
-AssociatedPress
-```
 
 
 ```{r}
