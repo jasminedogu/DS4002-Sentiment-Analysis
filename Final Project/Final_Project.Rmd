@@ -10,7 +10,7 @@ output:
   pdf_document:
     toc: yes
 ---
-#Cleaning the Data 
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, error=FALSE, cache = TRUE)
 #Import packages 
@@ -64,44 +64,6 @@ str(df)
 head(df,5)
 ```
 
-
-```{r}
-library(wordnet)
-library(textstem)
-library(qdapDictionaries)
-library(qdap)
-library(iconv)
-
-#CorpusList <-  iconv(, to ="utf-8")
-
-dfCorpus = Corpus(VectorSource(df))  
-#dfCorpus = as.character(dfCorpus)
-inspect(dfCorpus) 
-
-clean_corpus <- function(corpus) {
-  # Remove punctuation
-  corpus <- tm_map(corpus, removePunctuation(), lazy=TRUE)
-  # Transform to lower case
-  corpus <- tm_map(corpus, tolower(corpus, as.character()), lazy=TRUE)
-  # Remove stopwords and strip whitespace
-  corpus <- tm_map(corpus, removeWords(), words = stopwords("en"), stripWhitespace(), lazy=TRUE)
-  # Lemmatize
-  corpus <- tm_map(corpus, lemmatize_strings(corpus, as.vector()), lazy=TRUE)
-  return(corpus)
-}
-
-
-?removePunctuation
-?stripWhitespace
-?lemmatize_strings
-?tm_map
-?content_transformer  #convert everything to the correct data type within the corpus
-
-clean_corpus(dfCorpus)
-
-```
-
-
 ```{r}
 #Datasets for later 
 df_spam <- filter(df, df$Category =="spam")
@@ -112,7 +74,7 @@ df_ham <-filter(df, df$Category =="ham")
 df2 = df %>% 
   select(Message) 
 
-tm_map(df2, lemmatize_strings)
+#tm_map(df2, lemmatize_strings)
 
 #%>%
 # replace_contraction() 
