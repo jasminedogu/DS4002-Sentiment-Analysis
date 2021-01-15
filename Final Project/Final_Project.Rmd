@@ -55,11 +55,32 @@ The data consists of 5157 observations. Each observation is labeled “spam” o
 #Background Research
 We also wanted to do some background research regarding spam text messages to get an idea of how big a problem it is. We were extremely surprised to find that it was even more prominent than we expected. We discovered that around 3% of all text messages are spam related and that nearly 43 million Americans lost $10.5 billion to cellular text/call spams (in 2018). We also found information regarding steps that wireless providers utilize to minimize spam messages, including machine learning and artificial intelligence.
 
+#General Questions
+1) Is there a Distinct Separation Between the Topics Found in Spam and Ham Text Messages?
+
+- Topic Modeling - Latent Dirichlet Allocation using Gamma and Beta
+- Classification - feature engineering using regular expressions
+
+2) Can we Predict whether a Text will be Considered Spam or Ham?
+
+- Synthetic Minority Oversampling Technique (SMOTE)
+- Radial Support Vector Machines
+
+#Hypotheses
+Primary Hypothesis: 
+Null - The variation between spam and non-spam messages within the LDA Topic Model Gamma will not be statistically significant (alpha of 0.05).
+Alternative - The variation between spam and non-spam messages within the LDA Topic Model Gamma will be statistically significant (alpha of 0.05).
+
+**In order to test our primary hypothesis, we will be conducting a two-sample t-test
+
+Secondary Hypotheses:
+Null - A SVM Kernel Model will classify spam messages with at a 0.9 recall rate or less. 
+Alternative - A SVM Kernel Model will classify spam messages with a recall rate greater than 0.9.
+
 
 ```{r}
 #reading in the dataset 
 df <- read.csv("/cloud/project/Datasets/Text_Message_Classification.csv")
-head(df)
 str(df)
 head(df,5)
 ```
@@ -68,7 +89,6 @@ head(df,5)
 #Datasets for later 
 df_spam <- filter(df, df$Category =="spam")
 df_ham <-filter(df, df$Category =="ham")
-
 
 #Removing punctuation
 df2 = df %>% 
@@ -95,21 +115,6 @@ df_xx <- df_xx %>%
 df_xx <- filter(df_xx, !str_detect(word, "na")) #filtering out the na's in messages
 df_xx
 ```
-
-```{r}
-#code prof wright gave to help us w lemmatize
-
-#corpus[[1]]
-#[1] " earnest roughshod document serves workable primer regions recent history make 
-#terrific th-grade learning tool samuel beckett applied iranian voting process bard 
-#black comedy willie loved another trumpet blast may new mexican cinema -bornin "
-#> corpus <- tm_map(corpus, lemmatize_strings)
-#> corpus[[1]]
-#[1] "earnest roughshod document serve workable primer region recent history make 
-#terrific th - grade learn tool samuel beckett apply iranian vote process bard black 
-#comedy willie love another trumpet blast may new mexican cinema - bornin"
-```
-
 
 # SPAM Filtering
 ```{r}
@@ -551,7 +556,11 @@ str(df_regEx)
 View(df_regEx)
 ```
 
-#SMOTE using KNN
+# Data Sampling
+SMOTE is an oversampling technique for imbalanced data classification problems at the pre-processing step. It generates synthetic instances using the linear interpolation within the minority class and forces the region of the minority class to become broader. This is critical for our dataset given our base rate is 13%, indicating the presence of a rare event. There are various versions of SMOTE; for our purposes, the KNN and SVM variations are observed. 
+
+
+## SMOTE-KNN Variation
 ```{r}
 set.seed(03092000)
 
@@ -573,58 +582,9 @@ as.data.frame(table(newData$Category))
 View(newData)
 ```
 
-```{r}
-library(reticulate)
-import (pandas, as="pd")
-reticulate::use_python("/home/rstudio-user/.local/share/r-miniconda/envs/r-reticulate/bin/python")
-df_python = py_run_string(pd.read_csv("/cloud/project/Datasets/regEx.csv"))
+Here, we utilize the KNN variant of the SMOTE algorithm. A few critical parameters for SMOTE-KNN is the perc.over and perc.under variables. The calculations for these parameters can be seen in the R chunk above. The output of the SMOTE-KNN algorithm will later be used when creating the testing and training splits. Next, we proceed to continuing our data sampling utilizing the SMOTE-SVM variation.
 
-```
-
-
-```{r}
-
-
-#library(reticulate)
-#use_python("/home/rstudio-user/.local/share/r-miniconda/envs/r-reticulate/bin/python", required= TRUE)
-#py_run_string()
-
-
-#Sys.which("python")
-
-
-
-
-#py_discover_config()
-#py_install("pandas")
-#py_install("scikit-learn")
-#py_install("collections")
-#py_install("GLIBCXX_3.4.22")
-```
-
-
-
-```{python}
-#df_python = pd.read_csv("/cloud/project/Datasets/regEx.csv")
-#import pandas as pd
-#from collections import Counter
-#from sklearn.datasets import make_classification
-#from imblearn.over_sampling import SVMSMOTE 
-
-#Y = df_python["Category"]
-#X = df_python.drop(['Category'], axis=1)
-#sm = SVMSMOTE(random_state=3092000)
-#X_res, Y_res = sm.fit_resample(X, Y)
-
-#df_svm_smote = pd.concat([Y_res,X_res], axis=1)
-
-#df_svm_smote.to_csv('/cloud/project/Datasets/df_svm_smote2.csv', index=False) 
-#GLIBCXX_3.4.22
-#df_svm_smote.head()
-```
-
-
-SMOTE Dataset Using Python
+## SMOTE-SVM Variation (Using Python)
 ```{r}
 #utilized the dataframe we saved over from the jupyter notebook
 df_smote_svm <- read.csv("/cloud/project/Datasets/df_svm_smote.csv")
@@ -633,10 +593,20 @@ df_smote_svm[sapply(df_smote_svm, is.numeric)] <- lapply(df_smote_svm[sapply(df_
 head(df_smote_svm)
 ```
 
+Having done the SMOTE-KNN data sampling, we can move onto creating the SMOTE-SVM data sampling. Although it is very similar to the SMOTE-KNN variant in the sense that it allows for an imbalanced dataset to become more balanced, it does have clear differences in the approach it takes to achieve this. SMOTE-SVM uses the SVM algorithm to locate the decision boundary defined by the support vectors and creates a new instance randomly along the lines, joining each minority class support vector. 
+
+The R documentation for SMOTE-SVM was difficult to find and utilize. Although our group was able to find multiple research studies that conducted SMOTE-SVM and identified that it performed better for binary text classification, we were unable to find resources that helped guide us with using SMOTE-SVM in R. Therefore, we used Python for this portion of the project. The ipynb file showing the work can be found in the Final Projects directory of this project. In the above chunk, we are showing the data being read into our R STudio environment and a few manipulations to clean up the dataframe. After getting the dataframe from the SMOTE-SVM, we can move onto creating the training and testing groups and then onto creating the predictive models.
+
+# Creating Predictive Models
+
+## Creating Training and Testing Sets
+When creating training and testing sets, it is important to note that this will be done three separate times: for the original imbalanced dataset, the SMOTE-KNN dataset, and the SMOTE-SVM dataset. Our team utilized a 70-30 split ratio. The work for this can be seen below.
+
 ```{r}
 # Creating the Training and Testing Sets
 set.seed(03092000)
 
+#Original imbalanced dataset
 data_train <- sample(1:nrow(df_regEx),
                round(0.7 * nrow(df_regEx), 0), 
                replace = FALSE)
@@ -644,6 +614,7 @@ data_test <- sample(1:nrow(df_regEx),
                round(0.3 * nrow(df_regEx), 0), 
                replace = FALSE)
 
+#SMOTE-KNN variation
 data_train_smote <- sample(1:nrow(newData),
                round(0.7 * nrow(newData), 0), 
                replace = FALSE)
@@ -651,14 +622,13 @@ data_test_smote <- sample(1:nrow(newData),
                round(0.3 * nrow(newData), 0), 
                replace = FALSE)
 
+#SMOTE-SVM variation
 data_train_smote_svm <- sample(1:nrow(df_smote_svm),
                round(0.7 * nrow(df_smote_svm), 0), 
                replace = FALSE)
-
 data_test_smote_svm <- sample(1:nrow(df_smote_svm),
                round(0.3 * nrow(df_smote_svm), 0), 
                replace = FALSE)
-
 
 #Assigning random selection to original df
 original_train <- df_regEx[data_train, ] #Should contain 70% of data points
@@ -671,20 +641,23 @@ smote_test <- newData[data_test_smote, ]
 #Assigning random selection to smote df (this is for the model utilizing svm)
 smote_train_svm <- df_smote_svm[data_train_smote_svm, ] #Should contain 70% of data points
 smote_test_svm <- df_smote_svm[data_test_smote_svm, ]
-
 ```
 
-## Radial Kernel Training 
+After creating the training and testing sets, we can move onto the predictive model building.Moving onto the actual predictive model creation, our group decided to use Radial Support Vector Machines. We believed that this algorithm would be the most successful given the nature of our dataset. Similarly, we found multiple research studies that supported this thought process. For example, in the International Journal of Scientific and Technology Research, there was an article that looked at classifying SPAM Messages with a dataset very similar to ours structurally. They looked at how their predictive models performed when using various algorithms, like KNN, K means, SVM, Linear Regression, Decision Trees to name a few. In their studies, SVM with a radial kernel performed the best overall with most metrics at or above 0.98, therefore we proceeded with selecting the Radial SVM model to implement on our data.
+
+## SVM Radial Kernel Baseline Model Creation 
 ```{r}
 #install.packages('e1071') 
 library(e1071) 
 set.seed(03092000)
+
+#SMOTE-KNN Variation
 classifier_smote <- svm(formula = Category ~ ., 
                  data = smote_train, 
                  type = 'C-classification',  #Default
                  #can change degree 
                  kernel = 'radial')  #The kernel used in training and predicting
-
+#Original imbalanced dataset
 classifier_normal <- svm(formula = Category ~ ., 
                  data = original_train, 
                  type = 'C-classification',  #Default
@@ -692,56 +665,59 @@ classifier_normal <- svm(formula = Category ~ .,
                  kernel = 'radial')  #The kernel used in training and predicting
 #based on a study that was done 
 
+#SMOTE-SVM Variation
 classifier_smote_svm <- svm(formula = Category ~ ., 
                  data = smote_train_svm, 
                  type = 'C-classification',  #Default
                  #can change degree 
                  kernel = 'radial')  #The kernel used in training and predicting
 #based on a study that was done 
-
 ```
 
+Here, we are creating the three baseline models. These models will go through predictive testing and hyperparameter tuning in the next steps.
 
+## Predicting Test Set Results 
 ```{r}
-#Original
 # Predicting the test set results 
 set.seed(03092000)
 
+#Original imbalanced data
 y_pred_original <- predict(classifier_normal, newdata = original_test[-1]) 
 
-#SMOTE
+#SMOTE-KNN variation
 y_pred_original_smote <- predict(classifier_smote, newdata = smote_test[-1]) 
 
-#SMOTE SVM
+#SMOTE-SVM variation
 y_pred_original_smote_svm <- predict(classifier_smote_svm, newdata = smote_test_svm[-1]) 
 ```
 
-### Confusion Matrix Results
+## Confusion Matrix Results
 ```{r}
-#Original
 # Making a Confusion Matrix 
-#install.packages("caret")
 set.seed(03092000)
-
+#install.packages("caret")
 library(caret)
+
+#Original imbalanced Data
 cm_original <- confusionMatrix(original_test$Category,y_pred_original, positive = "1")
 cm_original
 
-#SMOTE KNN
+#SMOTE-KNN variation
 cm_smote <- confusionMatrix(smote_test$Category,y_pred_original_smote, positive = "1")
 cm_smote
 
-#SMOTE SVM
+#SMOTE-SVM variation
 cm_smote_svm <- confusionMatrix(smote_test_svm$Category,y_pred_original_smote_svm, positive = "1")
 cm_smote_svm
 ```
 
+Looking at the confusion matrices, we can see that our models are performing fairly well prior to the hyperparameter tuning. The model built on the original imbalanced data seems to have the best performance across the board when looking at the different metrics. However, compared to the SMOTE-KNN and SMOTE-SVM variants, we can see that currently the SVM model built using the SMOTE-KNN data sampling is performing better. We move onto hyperparameter tuning.
 
 ## Hyperparameter Tuning Proccess 
 ```{r}
 library(e1071)
 set.seed(03092000)
-#Original
+#Original imbalanced dataset
 obj_original <- tune(svm, Category~., data = original_test, 
             ranges = list(gamma = 2^(-1:1), 
                           cost = 2^(2:4)),
@@ -749,7 +725,7 @@ obj_original <- tune(svm, Category~., data = original_test,
 #obj_original ##gamma 0.5, cost 4
 summary(obj_original)
 
-#SMOTE - KNN
+#SMOTE - KNN variation
 obj_smote <- tune(svm, Category~., data = smote_test, 
             ranges = list(gamma = 2^(-1:1), 
                           cost = 2^(2:4)),
@@ -757,23 +733,23 @@ obj_smote <- tune(svm, Category~., data = smote_test,
 #obj_smote ##gamma 1, cost 4
 summary(obj_smote)
 
-#SMOTE - SVM
-#gamma 1, cost 4
+#SMOTE - SVM variation
 obj_smote_svm <- tune(svm, Category~., data = smote_test_svm, 
             ranges = list(gamma = 2^(-1:1), 
                           cost = 2^(2:4)),
             tunecontrol = tune.control(sampling = "fix"))
+#gamma 1, cost 4
 summary(obj_smote_svm)
-obj_smote_svm
 ```
 
+Using our tuning function, we find the optimal gamma and cost values. The tuning function tests a range of gamma and cost values, and determines the most efficient and optimized by looking at the error rates. By utilizing the optimized hyperparameters, we hope to increase the performance of our models. We move onto building the tuned models.
 
-# Tuned Models
+##SVM Radial Kernal Tuned Model Creation
 ```{r}
 #install.packages('e1071') 
 library(e1071) 
 set.seed(03092000)
-
+#SMOTE-KNN Variation  
 classifier_smote_tuned <- svm(formula = Category ~ ., 
                  data = smote_train, 
                  type = 'C-classification',  #Default
@@ -781,7 +757,7 @@ classifier_smote_tuned <- svm(formula = Category ~ .,
                  kernel = 'radial',
                  gamma=1,
                  cost =4)  #The kernel used in training and predicting
-
+#Original imbalanced data
 classifier_normal_tuned <- svm(formula = Category ~ ., 
                  data = original_train, 
                  type = 'C-classification',  #Default
@@ -790,6 +766,8 @@ classifier_normal_tuned <- svm(formula = Category ~ .,
                  gamma =.5,
                  cost = 4)  #The kernel used in training and predicting
 #based on a study that was done 
+
+#SMOTE-SVM Variation
 classifier_smote_tuned_svm <- svm(formula = Category ~ ., 
                  data = smote_train_svm, 
                  type = 'C-classification',  #Default
@@ -800,41 +778,83 @@ classifier_smote_tuned_svm <- svm(formula = Category ~ .,
 #based on a study that was done 
 ```
 
-# Tuned Prediction
+After figuring out the optimized gamma and cost values, we re-run our models in hopes of creating more efficient and accurate models. 
+
+## Predicting Test Set Results - Tuned Models
 ```{r}
 set.seed(03092000)
-#Original
+#Original imbalanced data
 # Predicting the test set results 
 y_pred_original_tuned <- predict(classifier_normal_tuned, newdata = original_test[-1]) 
 
-#SMOTE KNN
+#SMOTE-KNN variation
 y_pred_original_smote_tuned <- predict(classifier_smote_tuned, newdata = smote_test[-1]) 
 
-#SMOTE SVM
+#SMOTE-SVM variation
 y_pred_smote_tuned_svm <- predict(classifier_smote_tuned_svm, newdata = smote_test_svm[-1]) 
-
 ```
 
 ### Confusion Matrix Results for Tuned Models
 ```{r}
-#Original
 set.seed(03092000)
 # Making a Confusion Matrix 
 #install.packages("caret")
 library(caret)
+
+#Original imabalanced data
 cm_original_tuned <- confusionMatrix(original_test$Category,y_pred_original_tuned, positive = "1")
 cm_original_tuned
 
-#SMOTE KNN
+#SMOTE-KNN Variation
 cm_smote_tuned <- confusionMatrix(smote_test$Category,y_pred_original_smote_tuned, positive = "1")
 cm_smote_tuned
 
-#SMOTE SVM
+#SMOTE-SVM Variation
 cm_smote_tuned_svm <- confusionMatrix(smote_test_svm$Category,y_pred_smote_tuned_svm, positive = "1")
 cm_smote_tuned_svm
 ```
 
+Here, we have the confusion matrices for all three tuned models. We can see that similar to the un-tuned, baseline models, the model built using the original imbalanced data performed the best. When looking at the performance of the tuned models using the SMOTE data sampling, it can be seen that the SVM variation of SMOTE performed significantly better than the KNN variation of the SMOTE algorithm. 
 
+Although overall, the models built on the original, imbalanced dataset performed the best, these are not the optimized models. Most machine learning algorithms for classification predictive models are designed and demonstrated on problems that assume an equal distribution of the data. As a result, this does mean that an application of a model may focus on learning the characteristics of the abundant observations only, neglecting the examples from the minority class. For this reason, it's important to utilize an oversampling technique like SMOTE. Therefore, we selected the tuned SMOTE-KNN model as our optimized, best-performing model. However, it is possible that because SMOTE was utilized, there may have been some overfitting to the data. This is critical to keep in mind, and should be explored in future studies. 
 
+The confusion matrix showing all of the models and their performances can be found below. 
 
+#Final Predictive Model Results
+```{r}
+#install.packages("kableExtra")
+library(kableExtra)
+Model = c("Untuned", "Tuned", "Untuned", "Tuned", "Untuned","Tuned")
+Dataset = c("Original Data", "Original Data", "SMOTE-KNN", "SMOTE-KNN", "SMOTE-SVM", "SMOTE-SVM")
+Kappa = c(0.8824,0.9172, 0.9169, 0.9371,0.8205, 0.8281)
+Sensitivity = c(0.9947,0.9950,0.9768,0.9840, 0.9746, 0.9832)
+Accuracy = c(0.9743,0.9815,0.9619,0.9712, 0.9102, 0.9140)
+results = data.frame(Model, Dataset, Kappa, Sensitivity, Accuracy)
+kable(results)
+```
+As a result of our findings, because our SVM Model utilizing the SMOTE-KNN data sampling algorithm had a recall rate of 98.40%, which is greater than the 90% recall rate as mentioned in our secondary null hypothesis, we reject the null hypothesis. Our results are statistically significant.
+
+#Limitations
+When looking at how our model and analysis could be implemented in the future, it is important to note some of the limitations. 
+
+Geographical Boundaries - Our data was gathered from messages originating in the UK and Singapore. As text messages can have a high range of variation around the world (in syntax, morphology, slang, etc.), the usability of our model would have to be modified. This would be dependent on where the data was collected, and the cultural and language considerations that we would have to examine.
+
+Generalizability - The utilization of SMOTE allowed us to replicate “spam” events in order to more accurately build our model. The SMOTE method increases the likelihood of overfitting within the model, which is something we would want to try to minimize.
+
+Time Sensitive - As civilizations grow and change over time, so does the way in which we communicate. Spam messages, like other scams, vary in their common approaches overtime. This essentially means that they can be very dependent on common trends at the time. Our model does not take this into account, as the messages collected for the dataset were all from around the same time period.
+
+SMOTE Documentation - When researching the implementation of SMOTE, we found there to be a lack of documentation of how the SMOTE-SVM algorithm works in R. We would hope for there to be more information and clarification released in the future.
+
+#Future Analysis
+There are a multitude of things that we would like to look at in the future, in order to better understand spam messages and how different models can evaluate these messages differently.
+
+Other Types of Messages - There are various outlets for messaging, many of which we believe would be interesting to explore the similarities to spam text messaging. We believe that running similar modeling with email messages could be highly beneficial in discovering commonalities between the two messaging platforms. 
+
+Different Locations - Looking at data solely from the United States could be both more relevant to our audience, and allow us to see similarities and differences between spam messaging techniques from around the world.
+
+Utilize Other Features - We isolated the features for our model by looking at the spam messages and trying to find common numbers, phrases, words, and symbols. In a future analysis, we could evaluate the messages in a different manner and be able to include different (and possibly better) features within the model.
+
+Sampling Methods - As we only utilized the Synthetic Minority Oversampling Technique (SMOTE) within our model, we would want to explore other strategies in the future in order to see a possible change in performance.
+
+Cost Consideration - Although we looked at a cost matrix to determine possible cost savings for filtering out more spam messages for wireless customers, we could examine different biases to inject into the cost matrix. This would allow for maximum organization benefit, while more accurately portraying our cost savings numbers.
 
