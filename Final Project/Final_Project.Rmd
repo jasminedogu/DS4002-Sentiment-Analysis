@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, error=FALSE, c
 #Import packages 
 library(tidyverse)
 #library(reticulate)
-install.packages("tidytext")
+#install.packages("tidytext")
 library(tidytext)
 library(textdata)
 #use_python("/home/rstudio-user/.local/share/r-miniconda/envs/r-reticulate/bin/python",required= TRUE)
@@ -29,16 +29,16 @@ library(rpart)
 library(RTextTools)
 library(tm)
 library(DMwR)
-install.packages("DT")
+#install.packages("DT")
 library(DT)
 #install.packages("topicmodels")
 library(tm)
-install.packages("plotly")
+#install.packages("plotly")
 library(plotly)
 #install.packages("LDAvis")
 library(LDAvis)
 library(qdap)
-install.packages("topicmodels")
+#install.packages("topicmodels")
 library(topicmodels)
 library(ggplot2)
 library(googleLanguageR)
@@ -174,7 +174,6 @@ df_xx_ham
 ```
 
 
-
 ```{r}
 ## Joined Count
 
@@ -212,7 +211,7 @@ df_sentiment_affin_spam <-
   df_xx_spam %>%
   inner_join(get_sentiments("afinn")) # pull out only sentiment words
 
-View(df_sentiment_affin_spam)
+#View(df_sentiment_affin_spam)
 ```
 
 ## HAM Sentiment
@@ -224,7 +223,7 @@ df_sentiment_affin_ham <-
   df_xx_ham %>%
   inner_join(get_sentiments("afinn")) # pull out only sentiment words
 
-View(df_sentiment_affin_ham)
+#View(df_sentiment_affin_ham)
 ```
 
 
@@ -311,6 +310,9 @@ br<- ggplot(count.data, aes(x = 2, y = prop, fill = class)) +
 br
 #ggsave(br,file="base_rate.png", bg = "transparent")
 ```
+
+This chart shows the base rate again.
+
 
 # Topic Modeling 
 
@@ -482,7 +484,6 @@ set.seed(03092000)
 t.test(gammaValsStatsTopic1$gamma, gammaValsStatsTopic2$gamma)
 ```
   
-  
 Examining the t-test results, we found that we had a p-value of 0.9423. Because we are testing at the 0.05 significance level, we fail to reject the null hypothesis at the 0.05 level. Thus, we can conclude that the variation between spam and non-spam messages within the LDA Topic Model Gamma will not be statistically significant (alpha of 0.05). 
 
 ## Further Assessments for Differentiating Topics
@@ -545,6 +546,7 @@ We then decided it could be useful to analyze the two topics by comparing the 15
 
 
 
+#Regular Expressions: Feature Engineering
 
 ```{r}
 #Regular Expressions
@@ -591,8 +593,25 @@ df_regEx$Category <- ifelse(df_regEx$Category=='ham',0,1)  #if ham, 0, if spam 1
 df_regEx <- df_regEx %>% mutate_if(is.character,as.factor)
 df_regEx$Category <- as.factor(df_regEx$Category)
 str(df_regEx)
-View(df_regEx)
+#View(df_regEx)
 ```
+
+In order to conduct feature engineering for the data, we utilized Regular Expressions (or RegEx). We began by looking through the “spam” messages and searching for commonalities in words, symbols, phrases, numbers, etc. We made a list of these commonalities and then created regular expressions in order to isolate these features. We added a column for each of the 13 features that we decided on, and each observation indicated “T” or “F”. We then converted these to binary for modeling purposes.
+
+Features:
+Symbol - ? or !  
+Reply_Yes - “Yes”, “No”, “reply yes”, “reply no”, “reply"  
+Call - “call” 
+Digits - 4-10 digit numbers/codes  
+Link - “www”, “https”, and “com”  
+FreeMsg - “freemsg”  
+Free - “free” or “urgent”  
+Won_Win - “won” or “win”  
+Mobile_Phone - “mobile phone”  
+Currency_Symbol - $ or £  
+Please - “please”  
+Eighteen - “18+”  
+XXX - “xxx”. 
 
 # Data Sampling
 SMOTE is an oversampling technique for imbalanced data classification problems at the pre-processing step. It generates synthetic instances using the linear interpolation within the minority class and forces the region of the minority class to become broader. This is critical for our dataset given our base rate is 13%, indicating the presence of a rare event. There are various versions of SMOTE; for our purposes, the KNN and SVM variations are observed. 
@@ -617,7 +636,7 @@ str(df_regEx)
 newData <- SMOTE(Category ~ ., df_regEx, perc.over = Over_Perc,perc.under=Under_Perc)
 as.data.frame(table(newData$Category))
 
-View(newData)
+#View(newData)
 ```
 
 Here, we utilize the KNN variant of the SMOTE algorithm. A few critical parameters for SMOTE-KNN is the perc.over and perc.under variables. The calculations for these parameters can be seen in the R chunk above. The output of the SMOTE-KNN algorithm will later be used when creating the testing and training splits. Next, we proceed to continuing our data sampling utilizing the SMOTE-SVM variation.
