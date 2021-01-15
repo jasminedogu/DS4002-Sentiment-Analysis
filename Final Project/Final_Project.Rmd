@@ -10,7 +10,9 @@ output:
   pdf_document:
     toc: yes
 ---
-
+```{r}
+py_config() #not run to maintain privacy
+```
 
 #Cleaning the Data 
 ```{r setup, include=FALSE}
@@ -20,7 +22,7 @@ library(tidyverse)
 library(reticulate)
 library(tidytext)
 library(textdata)
-use_python("/home/rstudio-user/.local/share/r-miniconda/envs/r-reticulate/bin/python", required= TRUE)
+use_python("/home/rstudio-user/.local/share/r-miniconda/envs/r-reticulate/bin/python",required= TRUE)
 #install.packages("tidyselect")
 library(tidyselect)
 library(stringr)
@@ -542,16 +544,6 @@ data("AssociatedPress")
 AssociatedPress
 ```
 
-```{r}
-#function handles unbalanced classification problems using the SMOTE method
-#synthetic Minority Over Sampling Technique
-#library(smotefamily)
-
-#dat_plot = SMOTE(dat[,1:2],  # feature values
-#              as.numeric(dat[,3]),  # class labels
-#              K = 3, dup_size = 0)  # function parameters
-```
-
 
 ```{r}
 #Regular Expressions
@@ -603,6 +595,8 @@ View(df_regEx)
 
 #SMOTE using KNN
 ```{r}
+set.seed(03092000)
+
 unique(df_regEx$Category)
 result <- df_regEx %>% group_by(Category) %>% count()
 result
@@ -622,9 +616,30 @@ View(newData)
 ```
 
 ```{r}
+library(reticulate)
+import (pandas, as="pd")
+reticulate::use_python("/home/rstudio-user/.local/share/r-miniconda/envs/r-reticulate/bin/python")
+df_python = py_run_string(pd.read_csv("/cloud/project/Datasets/regEx.csv"))
+
+```
+
+
+```{r}
+
+
+library(reticulate)
+use_python("/home/rstudio-user/.local/share/r-miniconda/envs/r-reticulate/bin/python", required= TRUE)
+py_run_string()
+
+
 Sys.which("python")
+
+
+
+
+py_discover_config()
 py_install("pandas")
-#py_install("scikit-learn")
+py_install("scikit-learn")
 #py_install("collections")
 #py_install("GLIBCXX_3.4.22")
 ```
@@ -632,9 +647,8 @@ py_install("pandas")
 
 
 ```{python}
-import pandas as pd
 df_python = pd.read_csv("/cloud/project/Datasets/regEx.csv")
-
+import pandas as pd
 from collections import Counter
 from sklearn.datasets import make_classification
 from imblearn.over_sampling import SVMSMOTE 
@@ -659,14 +673,14 @@ SMOTE Dataset Using Python
 ```{r}
 df_smote_svm <- read.csv("/cloud/project/Datasets/df_svm_smote.csv")
 df_smote_svm <- df_smote_svm %>% select(-"X") 
-df_smote_svm <- as.factor(df_smote_svm)
-str(df_smote_svm)
 df_smote_svm[sapply(df_smote_svm, is.numeric)] <- lapply(df_smote_svm[sapply(df_smote_svm, is.numeric)],as.factor)
 head(df_smote_svm)
 ```
 
 ```{r}
 # Creating the Training and Testing Sets
+set.seed(03092000)
+
 data_train <- sample(1:nrow(df_regEx),
                round(0.7 * nrow(df_regEx), 0), 
                replace = FALSE)
@@ -684,9 +698,11 @@ data_test_smote <- sample(1:nrow(newData),
 data_train_smote_svm <- sample(1:nrow(df_smote_svm),
                round(0.7 * nrow(df_smote_svm), 0), 
                replace = FALSE)
+
 data_test_smote_svm <- sample(1:nrow(df_smote_svm),
                round(0.3 * nrow(df_smote_svm), 0), 
                replace = FALSE)
+
 
 #Assigning random selection to original df
 original_train <- df_regEx[data_train, ] #Should contain 70% of data points
@@ -733,6 +749,8 @@ classifier_smote_svm <- svm(formula = Category ~ .,
 ```{r}
 #Original
 # Predicting the test set results 
+set.seed(03092000)
+
 y_pred_original <- predict(classifier_normal, newdata = original_test[-1]) 
 
 #SMOTE
@@ -747,11 +765,13 @@ y_pred_original_smote_svm <- predict(classifier_smote_svm, newdata = smote_test_
 #Original
 # Making a Confusion Matrix 
 #install.packages("caret")
+set.seed(03092000)
+
 library(caret)
 cm_original <- confusionMatrix(original_test$Category,y_pred_original, positive = "1")
 cm_original
 
-#SMOTE
+#SMOTE KNN
 cm_smote <- confusionMatrix(smote_test$Category,y_pred_original_smote, positive = "1")
 cm_smote
 
@@ -781,6 +801,14 @@ obj_smote <- tune(svm, Category~., data = smote_test,
 #obj_smote ##gamma 1, cost 4
 summary(obj_smote)
 
+#SMOTE - SVM
+#gamma 1, cost 4
+obj_smote_svm <- tune(svm, Category~., data = smote_test_svm, 
+            ranges = list(gamma = 2^(-1:1), 
+                          cost = 2^(2:4)),
+            tunecontrol = tune.control(sampling = "fix"))
+summary(obj_smote_svm)
+obj_smote_svm
 ```
 
 
@@ -806,31 +834,48 @@ classifier_normal_tuned <- svm(formula = Category ~ .,
                  gamma =.5,
                  cost = 4)  #The kernel used in training and predicting
 #based on a study that was done 
+classifier_smote_tuned_svm <- svm(formula = Category ~ ., 
+                 data = smote_train_svm, 
+                 type = 'C-classification',  #Default
+                 #can change degree 
+                 kernel = 'radial',
+                 gamma =1,
+                 cost = 4)  #The kernel used in training and predicting
+#based on a study that was done 
 ```
 
 # Tuned Prediction
 ```{r}
+set.seed(03092000)
 #Original
 # Predicting the test set results 
 y_pred_original_tuned <- predict(classifier_normal_tuned, newdata = original_test[-1]) 
 
-#SMOTE
+#SMOTE KNN
 y_pred_original_smote_tuned <- predict(classifier_smote_tuned, newdata = smote_test[-1]) 
+
+#SMOTE SVM
+y_pred_smote_tuned_svm <- predict(classifier_smote_tuned_svm, newdata = smote_test_svm[-1]) 
 
 ```
 
 ### Confusion Matrix Results for Tuned Models
 ```{r}
 #Original
+set.seed(03092000)
 # Making a Confusion Matrix 
 #install.packages("caret")
 library(caret)
 cm_original_tuned <- confusionMatrix(original_test$Category,y_pred_original_tuned, positive = "1")
 cm_original_tuned
 
-#SMOTE
+#SMOTE KNN
 cm_smote_tuned <- confusionMatrix(smote_test$Category,y_pred_original_smote_tuned, positive = "1")
 cm_smote_tuned
+
+#SMOTE SVM
+cm_smote_tuned_svm <- confusionMatrix(smote_test_svm$Category,y_pred_smote_tuned_svm, positive = "1")
+cm_smote_tuned_svm
 ```
 
 
