@@ -314,7 +314,7 @@ br
 
 # Topic Modeling 
 
-  Topic Modeling is a form of unsupervised machine learning that works similar to clustering. Topic Modeling utilizes soft clustering, which means that documents can be composed of multiple documents for example. One of the most commonly utilized forms of topic modeling is Latent Dirichlet Allocaiton (LDA), which we will be utilizing in our topic modeling analysis. With our topic modeling analysis, we will aim to explore and answer our primary hypothesis - hopefully being able to easily identify and fit the two topics into spam and ham messages. 
+Topic Modeling is a form of unsupervised machine learning that works similar to clustering. Topic Modeling utilizes soft clustering, which means that documents can be composed of multiple documents for example. One of the most commonly utilized forms of topic modeling is Latent Dirichlet Allocation (LDA), which we will be utilizing in our topic modeling analysis. With our topic modeling analysis, we will aim to explore and answer our primary hypothesis - hopefully being able to easily identify and fit the two topics into spam and ham messages. 
 
 ```{r}
 #remove stop words, perform stemming/maybe lemmatization, handle aprosthropes, handle contractions, deal with numbers (?), spell correction if needed, language, SMOTE, account for text
@@ -374,11 +374,12 @@ df_xx_ngrams_3 %>%
 
 #head(datatable(df_xx_ngrams_3), 20)
 ```
-    We wanted to take a look at the bigrams and trigrams of the text data, in anticipation for potentially utilizing them later in our text classification model. 
   
-    The results of the bigrams demonstrated the the top 3 bigrams were "i m", "lt gt", and "i ll" with 425, 276, and 204 appearances respectively. This was informative as we realized that the frequency of the appearance of bigrams was not at a level that would make it particularly useful for feature engineering, given that the most frequent bigram, appeared less than 8% of the overall spam texts.
+We wanted to take a look at the bigrams and trigrams of the text data, in anticipation for potentially utilizing them later in our text classification model. 
+  
+The results of the bigrams demonstrated the the top 3 bigrams were "i m", "lt gt", and "i ll" with 425, 276, and 204 appearances respectively. This was informative as we realized that the frequency of the appearance of bigrams was not at a level that would make it particularly useful for feature engineering, given that the most frequent bigram, appeared less than 8% of the overall spam texts.
     
-    The resutls of the trigrams were equally as informative as they were unfruitful. The top 3 trigrams were "i don t", "i ll call", and "how are you" with 73, 57, and 44 appearances respectively. Once again, we realized that trigrams would not be a sufficient feature due to its infrequency within the overall dataset. 
+The resutls of the trigrams were equally as informative as they were unfruitful. The top 3 trigrams were "i don t", "i ll call", and "how are you" with 73, 57, and 44 appearances respectively. Once again, we realized that trigrams would not be a sufficient feature due to its infrequency within the overall dataset. 
 
 
 ```{r}
@@ -466,15 +467,16 @@ gammaValsStatsTopic1 = gammaValsStats %>% filter(topic == 1)
 gammaValsStatsTopic2 = gammaValsStats %>% filter(topic == 2) 
 #gammaValsStatsTopic2
 ```
-  The betas in our models were generally very low, ranging from .023 to 8.54 x 10^-9. This makes sense due to the nature of our text, being shorter SMS items rather than long, superfluous documents. As a general principle, the beta will increase as the number of words within the topic increases. 
+
+The betas in our models were generally very low, ranging from .023 to 8.54 x 10^-9. This makes sense due to the nature of our text, being shorter SMS items rather than long, superfluous documents. As a general principle, the beta will increase as the number of words within the topic increases. 
 
   
-  We next examined the gamma values of the rates. In a very good model, we would expect our gamma rates to be able to generally classify documents with gamma values equivalent to the base rates of the data set ~13%/~87%. This is becuase we are hoping to equate the two unknown topics to the spam and non-spam observations. However, it is evident that our gamma values did not support that this topic modeling was effective method for the classification of our data set, as most most values remained around 0.50 for both topics 1 and two. 
+We next examined the gamma values of the rates. In a very good model, we would expect our gamma rates to be able to generally classify documents with gamma values equivalent to the base rates of the data set ~13%/~87%. This is becuase we are hoping to equate the two unknown topics to the spam and non-spam observations. However, it is evident that our gamma values did not support that this topic modeling was effective method for the classification of our data set, as most most values remained around 0.50 for both topics 1 and two. 
 
 ## Primary Hypothesis Evaluation Two Sample T-Test
 
 
-  To properly assess the statistical significance of our gamma results betwen the topics, we chose to perform a two sample t-test. We first confirmed assumptions that would apply towards the use of a two sample t-test, such as independence, random sampling from a population, continuous data, normal distribution, and equal variance. 
+To properly assess the statistical significance of our gamma results betwen the topics, we chose to perform a two sample t-test. We first confirmed assumptions that would apply towards the use of a two sample t-test, such as independence, random sampling from a population, continuous data, normal distribution, and equal variance. 
 
 ```{r}
 set.seed(03092000)
@@ -506,8 +508,9 @@ plt
 
 ```
   
-  Examining the two "unknown" topics, LDA topic modeling does not make it too obvious to qualitatively infer which topic is which, as shown when examining the top 15 words in terms of beta-valuation. Topic 1 showed slightly more structure, having top words that mentioned time, location, place. Topic 2 was slighly more conversational, with the utilization of slang appearing at times. A lot of words appeared to have many similarities. 
-  While this was not what we were ideally looking for, this was not too shocking as many spam messages purposefully mimic human linguistic patterns to trick humans into engaging with the message. 
+Examining the two "unknown" topics, LDA topic modeling does not make it too obvious to qualitatively infer which topic is which, as shown when examining the top 15 words in terms of beta-valuation. Topic 1 showed slightly more structure, having top words that mentioned time, location, place. Topic 2 was slighly more conversational, with the utilization of slang appearing at times. A lot of words appeared to have many similarities. 
+
+While this was not what we were ideally looking for, this was not too shocking as many spam messages purposefully mimic human linguistic patterns to trick humans into engaging with the message. 
   
 
  
@@ -538,8 +541,8 @@ split_plt_text <- data_plt_text %>%
 
 split_plt_text
 ```
-  We then decided it could be useful to analyze the two topics by comparing the 15 most different words for each topic between the two topics. Ths was done using a log ratio of the beta values for each word. it appears that topic 1's most differing word was "house", while topic 2's most differing word was "week". it seems like there was a clear difference in the log ratio valuation separating the top 15 words for each topic, but this was not too evident and helpful in our classification process. 
 
+We then decided it could be useful to analyze the two topics by comparing the 15 most different words for each topic between the two topics. Ths was done using a log ratio of the beta values for each word. it appears that topic 1's most differing word was "house", while topic 2's most differing word was "week". it seems like there was a clear difference in the log ratio valuation separating the top 15 words for each topic, but this was not too evident and helpful in our classification process. 
 
 
 
@@ -868,6 +871,7 @@ Accuracy = c(0.9743,0.9815,0.9619,0.9712, 0.9102, 0.9140)
 results = data.frame(Model, Dataset, Kappa, Sensitivity, Accuracy)
 kable(results)
 ```
+
 As a result of our findings, because our SVM Model utilizing the SMOTE-KNN data sampling algorithm had a recall rate of 98.40%, which is greater than the 90% recall rate as mentioned in our secondary null hypothesis, we reject the null hypothesis. Our results are statistically significant.
 
 #Limitations
