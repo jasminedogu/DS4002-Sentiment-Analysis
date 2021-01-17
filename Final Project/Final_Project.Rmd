@@ -272,6 +272,38 @@ ggplot(data = df_sentiment_affin_ham,
   theme_minimal()
 ```
 
+## AFINN Spam & Ham Comparison
+```{r}
+# adding classification columns
+vec_ham <- ("ham")
+df_sentiment_affin_ham1 <- df_sentiment_affin_ham
+df_sentiment_affin_ham1$classification <- vec_ham
+
+vec_spam <- ("spam")
+df_sentiment_affin_spam1 <- df_sentiment_affin_spam
+df_sentiment_affin_spam1$classification <- vec_spam
+```
+
+```{r}
+# combining data frames
+combined_affin <- rbind(df_sentiment_affin_ham1,df_sentiment_affin_spam1)
+```
+
+```{r}
+# combined histogram
+library(hrbrthemes)
+p <- combined_affin %>%
+  ggplot( aes(x=value, fill=classification)) +
+    geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity') +
+    scale_fill_manual(values=c("#69b3a2", "#404080")) +
+    theme_ipsum() +
+    labs(fill="")
+p
+```
+(important note) - The combined histogram is NOT stacked. For example, there were about 625 "ham" messages and about 225 "spam" with a sentiment value of -1.
+The combined histogram shows us the distributions of the text sentiments for both "ham" and "spam" messages. As shown, there was a more indicated balance between sentiments within the "ham" category. 
+
+
 
 # Base Rate Assessment
 ```{r}
@@ -565,6 +597,130 @@ df_regEx['Eighteen'] <- NA
 
 head(df_regEx)
 ```
+
+
+
+## Finding Number of Observations for Each Feature
+```{r}
+# Free
+free_num <- nrow(filter(df_regEx,Free == "1"))
+free_num
+
+# Currency_Symbol
+cs_num <- nrow(filter(df_regEx,Currency_Symbol == "1"))
+cs_num
+
+# Digits
+digits_num <- nrow(filter(df_regEx,Digits == "1"))
+digits_num
+
+# Link
+link_num <- nrow(filter(df_regEx,Link == "1"))
+link_num
+
+# Call
+call_num <- nrow(filter(df_regEx,Call == "1"))
+call_num
+
+# Mobile_Phone
+mp_num <- nrow(filter(df_regEx,Mobile_Phone == "1"))
+mp_num
+
+# XXX
+xxx_num <- nrow(filter(df_regEx,XXX == "1"))
+xxx_num
+
+# Symbol
+symbol_num <- nrow(filter(df_regEx,Symbol == "1"))
+symbol_num
+
+# Please
+please_num <- nrow(filter(df_regEx,Please == "1"))
+please_num
+
+# Reply_Yes
+ry_num <- nrow(filter(df_regEx,Reply_Yes == "1"))
+ry_num
+
+# FreeMsg
+fm_num <- nrow(filter(df_regEx,FreeMsg == "1"))
+fm_num
+
+# Won_Win
+ww_num <- nrow(filter(df_regEx,Won_Win == "1"))
+ww_num
+
+# Eighteen
+eighteen_num <- nrow(filter(df_regEx,Eighteen == "1"))
+eighteen_num
+```
+
+
+## Spider/Radar Plot
+```{r}
+# Data
+obs <- data.frame(
+    row.names = c("features"),
+      Free = 330,
+      Currency_Symbol = 273,
+        Digits = 634,
+        Link = 567,
+      Call = 634,
+    Mobile_Phone = 291,
+          XXX = 63,
+  Symbol = 1921,
+        Please = 137,
+  Reply_Yes = 1815,
+  FreeMsg = 14,
+  Won_Win = 320,
+  Eighteen = 132
+)
+obs
+
+# Package utilized
+library(fmsb)
+
+# Variable Ranges - maximum must be the overall highest observed feature, minimum must be the overall least observed feature
+max_min1 <- data.frame(
+  Free = c(1921,14),
+      Currency_Symbol = c(1921,14),
+        Digits = c(1921,14),
+        Link = c(1921,14),
+      Call = c(1921,14),
+    Mobile_Phone = c(1921,14),
+          XXX = c(1921,14),
+  Symbol = c(1921,14),
+        Please = c(1921,14),
+  Reply_Yes = c(1921,14),
+  FreeMsg = c(1921,14),
+  Won_Win = c(1921,14),
+  Eighteen = c(1921,14)
+)
+rownames(max_min1) <- c("Max", "Min")
+
+# Combining the ranges and observations
+bind1 <- rbind(max_min1, obs)
+#bind1
+
+# Plot the data
+#obs_data <- bind1[c("Max", "Min", "obs"), ]
+#radarchart(bind1)
+
+
+# Customization of the radar plot 
+radarchart( bind1  , axistype=1 , 
+ 
+    #custom polygon
+    pcol=rgb(0.2,0.5,0.5,0.9) , pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=2 , 
+ 
+    #custom the grid
+    cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(0,2000,500), cglwd=.8,
+ 
+    #custom labels
+    vlcex=0.8 
+    )
+```
+The radar plot shown for the 13 features gives us insight into which features were the most and least common. As we had fewer overall "spam" observations that the number of observations including the Reply_Yes and Symbol features, those features may not be the best when trying to isolate "spam" messages as they would include high numbers of "ham" messages. We have much more confidence in the other 11 features, as we believe that their indicated observation counts would be more likely to have higher proportions of solely "spam" messages.
 
 
 ```{r}
